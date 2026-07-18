@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "懐紙",
+  "short_name": "懐紙",
+  "description": "原稿の走り書き、下書き、note原稿のための静かな執筆道具",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F5F2EB",
+  "theme_color": "#F5F2EB",
+  "icons": [
+    { "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
+

@@ -1,0 +1,26 @@
+name: 懐紙の動作確認
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: アプリのファイルを受け取る
+        uses: actions/checkout@v4
+      - name: 確認用の道具を準備する
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: 必要な道具を入れる
+        run: npm ci
+      - name: 自動試験を行う
+        run: npm test
+      - name: JavaScriptの文法を確認する
+        run: npm run check
