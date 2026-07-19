@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaishi-shell-v1.0.0';
+const CACHE_NAME = 'kaishi-shell-v1.0.1';
 const APP_SHELL = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/app.js', './src/constants.js', './src/db.js', './src/library.js',

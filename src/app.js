@@ -40,6 +40,7 @@ export const runtime = {
 
 const undoManager = new UndoManager(50);
 let toastTimer;
+let stopEditorViewportSync = () => {};
 
 function isStandalone() {
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -253,6 +254,9 @@ function currentEditorSnapshot() {
 }
 
 function clearEditorTimers() {
+  stopEditorViewportSync();
+  stopEditorViewportSync = () => {};
+  document.documentElement.style.removeProperty('--editor-viewport-height');
   if (!runtime.editor) return;
   clearTimeout(runtime.editor.saveTimer);
   clearInterval(runtime.editor.historyTimer);
@@ -281,7 +285,7 @@ async function renderEditor(documentId) {
   };
   if (!previous) undoManager.clear();
   const toolbar = doc.type === 'markdown'
-    ? `${toolButton('undo', '↶', '戻る')}${toolButton('redo', '↷', '進む')}${toolButton('md-h1', 'H1')}${toolButton('md-h2', 'H2')}${toolButton('md-h3', 'H3')}${toolButton('md-bold', 'B')}${toolButton('md-italic', 'I')}${toolButton('md-strike', 'S')}${toolButton('md-quote', '引用')}${toolButton('md-rule', '罫線')}${toolButton('md-ruby', 'ルビ')}`
+    ? `${toolButton('undo', '↶', '戻る')}${toolButton('redo', '↷', '進む')}${toolButton('markdown-menu', 'MD', 'Markdownの記法')}`
     : `${toolButton('undo', '↶', '戻る')}${toolButton('redo', '↷', '進む')}`;
   app.innerHTML = `<section class="screen editor-screen">
     ${header({ title: doc.title, subtitle: '保存済み', back: 'editor-back', menu: 'document-menu', extra: '<button class="icon-button" data-action="editor-new-document" aria-label="新しい原稿">✎</button>' })}
@@ -333,7 +337,26 @@ function bindEditor() {
     if (runtime.route.focus) textarea.focus();
   });
   if (runtime.editor.searchOpen) bindSearchPanel();
+  bindEditorViewport();
   updateUndoButtons();
+}
+
+function bindEditorViewport() {
+  stopEditorViewportSync();
+  const viewport = window.visualViewport;
+  const updateHeight = () => {
+    const height = viewport?.height ?? window.innerHeight;
+    if (height > 0) document.documentElement.style.setProperty('--editor-viewport-height', `${Math.round(height)}px`);
+  };
+  viewport?.addEventListener('resize', updateHeight);
+  viewport?.addEventListener('scroll', updateHeight);
+  window.addEventListener('resize', updateHeight);
+  stopEditorViewportSync = () => {
+    viewport?.removeEventListener('resize', updateHeight);
+    viewport?.removeEventListener('scroll', updateHeight);
+    window.removeEventListener('resize', updateHeight);
+  };
+  updateHeight();
 }
 
 function scheduleEditorSave() {
@@ -582,6 +605,20 @@ async function showDocumentMenu() {
     <button class="menu-button" data-action="document-info">原稿情報</button>
     <button class="menu-button" data-action="open-settings">表示設定</button>
     <button class="menu-button danger" data-action="trash-document">ゴミ箱へ移す</button>
+  </div>`);
+}
+
+function showMarkdownMenu() {
+  openSheet('Markdown', `<div class="sheet-list">
+    <button class="menu-button" data-action="md-h1">大見出し<small>行の先頭に # を付ける</small></button>
+    <button class="menu-button" data-action="md-h2">中見出し<small>行の先頭に ## を付ける</small></button>
+    <button class="menu-button" data-action="md-h3">小見出し<small>行の先頭に ### を付ける</small></button>
+    <button class="menu-button" data-action="md-bold">太字</button>
+    <button class="menu-button" data-action="md-italic">斜体</button>
+    <button class="menu-button" data-action="md-strike">打ち消し</button>
+    <button class="menu-button" data-action="md-quote">引用</button>
+    <button class="menu-button" data-action="md-rule">区切り線</button>
+    <button class="menu-button" data-action="md-ruby">ルビ</button>
   </div>`);
 }
 
@@ -969,15 +1006,16 @@ async function handleAction(action, element) {
     if (action === 'editor-back') return leaveEditor(runtime.editor.returnRoute || { name: 'home' });
     if (action === 'document-menu') return showDocumentMenu();
     if (action === 'undo' || action === 'redo') return performUndo(action);
-    if (action === 'md-h1') return prefixSelectedLines('# ');
-    if (action === 'md-h2') return prefixSelectedLines('## ');
-    if (action === 'md-h3') return prefixSelectedLines('### ');
-    if (action === 'md-bold') return replaceSelection('**', '**', '太字');
-    if (action === 'md-italic') return replaceSelection('*', '*', '斜体');
-    if (action === 'md-strike') return replaceSelection('~~', '~~', '打消し');
-    if (action === 'md-quote') return prefixSelectedLines('> ');
-    if (action === 'md-rule') return replaceSelection('\n---\n', '', '');
-    if (action === 'md-ruby') return replaceSelection('{', '|よみ}', '漢字');
+    if (action === 'markdown-menu') return showMarkdownMenu();
+    if (action === 'md-h1') { closeSheet(); return prefixSelectedLines('# '); }
+    if (action === 'md-h2') { closeSheet(); return prefixSelectedLines('## '); }
+    if (action === 'md-h3') { closeSheet(); return prefixSelectedLines('### '); }
+    if (action === 'md-bold') { closeSheet(); return replaceSelection('**', '**', '太字'); }
+    if (action === 'md-italic') { closeSheet(); return replaceSelection('*', '*', '斜体'); }
+    if (action === 'md-strike') { closeSheet(); return replaceSelection('~~', '~~', '打消し'); }
+    if (action === 'md-quote') { closeSheet(); return prefixSelectedLines('> '); }
+    if (action === 'md-rule') { closeSheet(); return replaceSelection('\n---\n', '', ''); }
+    if (action === 'md-ruby') { closeSheet(); return replaceSelection('{', '|よみ}', '漢字'); }
     if (action === 'retry-save') { const result = await saveEditorNow(); if (result) showToast('保存できました。'); return; }
     if (action === 'emergency-copy') return copyPlainText(document.querySelector('#editor')?.value ?? '').then(() => showToast('本文をコピーしました。'));
     if (action === 'emergency-file') {

@@ -125,14 +125,14 @@ a { color: var(--accent-strong); }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
+.editor-screen { display: flex; flex-direction: column; height: var(--editor-viewport-height, 100dvh); min-height: 0; }
 .editor-screen .app-header { flex: 0 0 auto; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; }
 .editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; border: 1px solid var(--border); border-radius: 15px; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; }
 .editor:focus { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
-.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
-.tool-button { flex: 0 0 auto; min-width: 46px; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
+.tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
 .tool-button:disabled { opacity: .4; }
 
 .search-panel { position: absolute; z-index: 12; top: 4px; right: 4px; left: 4px; padding: 9px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }

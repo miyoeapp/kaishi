@@ -15,6 +15,9 @@ function installDom({ standalone }) {
     }, configurable: true
   });
   window.matchMedia = () => ({ matches: standalone, addEventListener() {}, removeEventListener() {} });
+  const visualViewport = new window.EventTarget();
+  Object.defineProperty(visualViewport, 'height', { value: 844, writable: true, configurable: true });
+  Object.defineProperty(window, 'visualViewport', { value: visualViewport, configurable: true });
   const idb = new IDBFactory();
   const globals = {
     window,
@@ -73,6 +76,19 @@ test('ホーム画面版で新規原稿を保存し玄関へ戻せる', async ()
     assert.ok(create);
     create.click();
     const editor = await waitFor(() => window.document.querySelector('#editor'));
+    const toolbarActions = [...window.document.querySelectorAll('.editor-toolbar [data-action]')]
+      .map((button) => button.dataset.action);
+    assert.deepEqual(toolbarActions, ['undo', 'redo', 'markdown-menu']);
+    assert.equal(window.document.documentElement.style.getPropertyValue('--editor-viewport-height'), '844px');
+    window.visualViewport.height = 420;
+    window.visualViewport.dispatchEvent(new window.Event('resize'));
+    assert.equal(window.document.documentElement.style.getPropertyValue('--editor-viewport-height'), '420px');
+
+    window.document.querySelector('[data-action="markdown-menu"]').click();
+    await waitFor(() => window.document.querySelector('#sheet[open]'));
+    assert.match(window.document.querySelector('#sheet').textContent, /大見出し/);
+    window.document.querySelector('[data-sheet-close]').click();
+
     editor.value = '雨の日\n\n# 見出し';
     editor.dispatchEvent(new window.Event('input', { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 1200));

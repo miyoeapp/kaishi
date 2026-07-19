@@ -1,5 +1,5 @@
 export const APP_NAME = '懐紙';
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 export const SCHEMA_VERSION = 1;
 export const DB_NAME = 'kaishi-library';
 export const DB_VERSION = 1;

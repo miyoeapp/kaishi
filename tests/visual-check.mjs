@@ -61,6 +61,12 @@ await new Promise((resolve) => setTimeout(resolve, 1200));
 await page.screenshot({ path: 'artifacts/editor.png', fullPage: true });
 console.log('エディタ撮影');
 
+await page.setViewport({ width: 390, height: 520, deviceScaleFactor: 2 });
+await page.waitForFunction(() => Math.round(document.querySelector('.editor-toolbar')?.getBoundingClientRect().bottom ?? 9999) <= window.innerHeight);
+await page.screenshot({ path: 'artifacts/editor-keyboard-space.png' });
+console.log('キーボード表示相当でも編集道具が画面内にあることを確認');
+await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+
 await page.click('[data-action="document-menu"]');
 await page.waitForFunction(() => Boolean(document.querySelector('#sheet[open]')), { timeout: 10_000 });
 await page.screenshot({ path: 'artifacts/document-menu.png', fullPage: true });
