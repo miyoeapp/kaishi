@@ -6,15 +6,196 @@
   <meta name="theme-color" content="#F5F2EB">
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex, nofollow, noarchive">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'none'">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="懐紙">
   <title>懐紙</title>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
-  <link rel="icon" href="./assets/icon-192.png">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="apple-touch-icon" href="./kaishi-icon.png">
+  <link rel="icon" href="./kaishi-icon.png">
+  <style>
+:root {
+  --paper: #f5f2eb;
+  --paper-deep: #e9e6df;
+  --surface: #fffefa;
+  --ink: #2c2924;
+  --muted: #726d66;
+  --border: #d8d3ca;
+  --accent: #526d78;
+  --accent-strong: #3f5a66;
+  --danger: #9a4037;
+  --danger-soft: #f3ded9;
+  --warning: #7a5b1f;
+  --warning-soft: #f2e6bf;
+  --success: #456551;
+  --shadow: 0 8px 24px rgb(44 41 36 / 10%);
+  --editor-font-size: 17px;
+  --editor-line-height: 1.9;
+  --editor-margin: 20px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1d1c1a; --paper-deep: #151412; --surface: #282622; --ink: #f1ede5;
+    --muted: #b8b1a7; --border: #45413b; --accent: #9bb9c4; --accent-strong: #b7ccd4;
+    --danger: #e59a90; --danger-soft: #4b2925; --warning: #e6c574; --warning-soft: #41371e;
+    --success: #9fc2aa; --shadow: 0 8px 24px rgb(0 0 0 / 28%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #1d1c1a; --paper-deep: #151412; --surface: #282622; --ink: #f1ede5;
+  --muted: #b8b1a7; --border: #45413b; --accent: #9bb9c4; --accent-strong: #b7ccd4;
+  --danger: #e59a90; --danger-soft: #4b2925; --warning: #e6c574; --warning-soft: #41371e;
+  --success: #9fc2aa; --shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; background: var(--paper); color: var(--ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+a { color: var(--accent-strong); }
+[hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+#app { min-height: 100dvh; max-width: 720px; margin: 0 auto; background: var(--paper); }
+.screen { min-height: 100dvh; padding: env(safe-area-inset-top) 16px calc(92px + env(safe-area-inset-bottom)); }
+.screen.editor-screen, .screen.preview-screen { padding-bottom: env(safe-area-inset-bottom); }
+
+.app-header {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
+  min-height: 68px; padding: 8px 0; background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(14px);
+}
+.brand { margin: 0; font-family: var(--font-mincho); font-size: 24px; letter-spacing: .16em; }
+.header-title { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 16px; }
+.header-title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-state { margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--muted); }
+
+.icon-button, .round-button, .small-button, .button {
+  border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+}
+.icon-button { display: grid; place-items: center; flex: 0 0 46px; width: 46px; height: 46px; border-radius: 15px; font-size: 21px; }
+.icon-button:active, .button:active, .row-button:active, .sticky-card:active { transform: translateY(1px); filter: brightness(.97); }
+.button { min-height: 48px; padding: 11px 17px; border-radius: 14px; font-weight: 700; }
+.button.primary { color: #fff; border-color: var(--accent); background: var(--accent); }
+.button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: var(--danger-soft); }
+.button.ghost { background: transparent; }
+.button:disabled, .icon-button:disabled { opacity: .42; cursor: default; }
+.button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.button-row > * { flex: 1 1 130px; }
+.section-title-row { display: flex; align-items: center; min-height: 46px; margin-top: 10px; }
+.section-title { flex: 1; margin: 0; font-size: 14px; letter-spacing: .06em; }
+.small-button { min-height: 40px; padding: 8px 13px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+
+.notice { margin: 4px 0 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); }
+.notice.compact { display: flex; align-items: center; gap: 10px; padding: 9px 11px; font-size: 13px; }
+.notice.compact span { flex: 1; }
+.notice.warning { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, var(--border)); background: var(--warning-soft); }
+.notice.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); background: var(--danger-soft); }
+.offline-badge { padding: 5px 9px; border-radius: 9px; color: var(--muted); background: var(--paper-deep); font-size: 12px; }
+
+.sticky-strip { display: flex; gap: 10px; margin: 0 -16px; padding: 0 16px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+.sticky-strip::-webkit-scrollbar { display: none; }
+.sticky-card { flex: 0 0 min(72vw, 260px); min-height: 94px; padding: 14px; border: 0; border-radius: 14px; color: #2c2924; text-align: left; scroll-snap-align: start; white-space: pre-wrap; box-shadow: 0 2px 7px rgb(44 41 36 / 8%); }
+.sticky-card time { display: block; margin-top: 10px; font-size: 11px; opacity: .62; }
+
+.list { display: grid; gap: 8px; }
+.row-button { display: flex; align-items: center; width: 100%; min-height: 58px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; cursor: pointer; }
+.color-bar { align-self: stretch; flex: 0 0 5px; margin: -10px 11px -10px -12px; border-radius: 4px 0 0 4px; }
+.folder-mark { position: relative; flex: 0 0 24px; width: 24px; height: 17px; margin-right: 12px; border-radius: 4px; background: var(--item-color); }
+.folder-mark::before { content: ""; position: absolute; top: -5px; left: 3px; width: 11px; height: 7px; border-radius: 3px 3px 0 0; background: var(--item-color); }
+.row-main { flex: 1; min-width: 0; }
+.row-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; }
+.row-meta { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.chevron { margin-left: 10px; color: var(--muted); font-size: 22px; }
+.empty { margin: 10px 0; padding: 18px; border: 1px dashed var(--border); border-radius: 14px; color: var(--muted); text-align: center; }
+
+.fab { position: fixed; right: max(20px, calc((100vw - 720px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 25; width: 62px; height: 62px; border: 0; border-radius: 50%; color: #fff; background: var(--accent); box-shadow: var(--shadow); font-size: 27px; }
+
+.sheet { width: min(100%, 720px); max-height: min(86dvh, 760px); margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; color: var(--ink); background: var(--paper); box-shadow: 0 -12px 42px rgb(0 0 0 / 20%); }
+.sheet::backdrop { background: rgb(20 18 15 / 38%); backdrop-filter: blur(2px); }
+.sheet[open] { animation: sheet-in .18s ease-out; }
+@keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
+.sheet-inner { max-height: min(86dvh, 760px); padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; }
+.sheet-handle { width: 42px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--border); }
+.sheet-header { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.sheet-header h2 { flex: 1; margin: 0; font-size: 18px; }
+.sheet-list { display: grid; gap: 7px; margin-top: 8px; }
+.menu-button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; font-weight: 700; }
+.menu-button small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; }
+.menu-button.danger { margin-top: 14px; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); background: var(--danger-soft); }
+
+.field { display: grid; gap: 6px; margin: 12px 0; }
+.field > span, .field-label { font-size: 13px; font-weight: 700; }
+.text-input, .text-area, .select-input { width: 100%; min-height: 48px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 12px; color: var(--ink); background: var(--surface); outline: 0; }
+.text-input:focus, .text-area:focus, .select-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.text-area { min-height: 130px; resize: vertical; line-height: 1.65; }
+.color-choices { display: flex; gap: 9px; flex-wrap: wrap; }
+.color-choice { display: grid; place-items: center; width: 48px; height: 48px; border: 2px solid transparent; border-radius: 14px; color: #2c2924; background: var(--choice-color); font-weight: 800; }
+.color-choice.selected { border-color: var(--ink); }
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
+.segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
+
+.editor-screen { display: flex; flex-direction: column; height: var(--editor-viewport-height, 100dvh); min-height: 0; }
+.editor-screen .app-header { flex: 0 0 auto; }
+.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; }
+.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; border: 1px solid var(--border); border-radius: 15px; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; }
+.editor:focus { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
+.editor-toolbar::-webkit-scrollbar { display: none; }
+.tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
+.tool-button:disabled { opacity: .4; }
+
+.search-panel { position: absolute; z-index: 12; top: 4px; right: 4px; left: 4px; padding: 9px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
+.search-row { display: flex; gap: 7px; margin-top: 7px; }
+.search-row:first-child { margin-top: 0; }
+.search-row .text-input { min-width: 0; }
+.search-count { display: grid; place-items: center; flex: 0 0 58px; color: var(--muted); font-size: 12px; }
+
+.preview-screen { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
+.preview-content { flex: 1; overflow-y: auto; padding: 18px var(--editor-margin) 80px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); }
+.preview-content p { margin: 0 0 .9em; }
+.preview-content h1 { font-size: 1.65em; }
+.preview-content h2 { font-size: 1.38em; }
+.preview-content h3 { font-size: 1.16em; }
+.preview-content blockquote { margin: 1em 0; padding: .1em 1em; border-left: 4px solid var(--accent); color: var(--muted); }
+.preview-content .blank-line { height: .85em; }
+.preview-content ruby rt { font-size: .55em; }
+.preview-edit { position: fixed; right: max(20px, calc((100vw - 720px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 25; }
+
+.meta-grid { display: grid; grid-template-columns: minmax(100px, 38%) 1fr; border-top: 1px solid var(--border); }
+.meta-grid dt, .meta-grid dd { margin: 0; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+.meta-grid dt { color: var(--muted); }
+.danger-zone { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.drag-list { display: grid; gap: 8px; }
+.drag-item { display: flex; align-items: center; min-height: 54px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+
+.toast { position: fixed; z-index: 100; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); left: 16px; max-width: 520px; margin: auto; padding: 12px 15px; border-radius: 13px; color: #fff; background: #282622; box-shadow: var(--shadow); text-align: center; font-weight: 700; }
+.install-screen { display: grid; place-items: center; min-height: 100dvh; padding: max(28px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom)); background: var(--paper); }
+.install-card { width: min(100%, 420px); padding: 24px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.install-icon { display: block; width: 92px; height: 92px; margin: 0 auto 17px; border-radius: 22px; }
+.install-card h1 { margin: 0; text-align: center; font-family: var(--font-mincho); letter-spacing: .14em; }
+.install-card ol { display: grid; gap: 13px; margin: 22px 0 0; padding-left: 24px; line-height: 1.65; }
+.install-note { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+@media (max-width: 390px) {
+  .screen { padding-right: 12px; padding-left: 12px; }
+  .sticky-strip { margin-right: -12px; margin-left: -12px; padding-right: 12px; padding-left: 12px; }
+  .header-title { font-size: 14px; }
+  .icon-button { flex-basis: 44px; width: 44px; height: 44px; }
+}
+
+@media (min-width: 721px) {
+  body { background: var(--paper-deep); }
+  #app { box-shadow: 0 0 45px rgb(44 41 36 / 12%); }
+}
+
+  </style>
 </head>
 <body>
   <main id="app" aria-live="polite"></main>
@@ -22,7 +203,2574 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <input id="json-file-input" type="file" accept="application/json,.json" hidden>
   <noscript>懐紙を使うにはJavaScriptを有効にしてください。</noscript>
-  <script type="module" src="./src/app.js"></script>
+  <script>
+(() => {
+  // src/constants.js
+  var APP_NAME = "\u61D0\u7D19";
+  var APP_VERSION = "2.0.0";
+  var SCHEMA_VERSION = 1;
+  var DB_NAME = "kaishi-library";
+  var DB_VERSION = 1;
+  var MEMO_FOLDER_ID = "folder-memo";
+  var MAX_FILE_HISTORIES = 20;
+  var MAX_LIBRARY_BACKUPS = 5;
+  var TRASH_DAYS = 30;
+  var BACKUP_REMINDER_DAYS = 7;
+  var COLORS = [
+    { id: "vermilion", label: "\u6731\u8D64", value: "#E8B7AB" },
+    { id: "pink", label: "\u30D4\u30F3\u30AF", value: "#E7C7D1" },
+    { id: "yellow", label: "\u5C71\u5439", value: "#E9D69F" },
+    { id: "blue", label: "\u9752", value: "#BFD5DC" },
+    { id: "gray", label: "\u30B0\u30EC\u30FC", value: "#D3D1CC" }
+  ];
+  var COLOR_MAP = Object.fromEntries(COLORS.map((color) => [color.id, color.value]));
+  var DEFAULT_SETTINGS = {
+    id: "appearance",
+    fontSize: 17,
+    lineHeight: "standard",
+    pageMargin: "standard",
+    fontFamily: "mincho",
+    theme: "system",
+    lastBackupAt: null,
+    backupDismissedDate: null,
+    changedSinceBackup: false
+  };
+  var DOCUMENT_TYPES = {
+    markdown: "Markdown\u539F\u7A3F",
+    fumizukue: "\u6587\u673A\u8A18\u6CD5\u539F\u7A3F"
+  };
+  var STORE_NAMES = {
+    documents: "documents",
+    folders: "folders",
+    stickies: "stickies",
+    histories: "histories",
+    settings: "settings",
+    meta: "meta",
+    backups: "backups"
+  };
+
+  // src/db.js
+  var databasePromise;
+  function requestToPromise(request) {
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error("\u7AEF\u672B\u5185\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u66F8\u304D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+    });
+  }
+  function createStore(database, name, options = { keyPath: "id" }) {
+    if (database.objectStoreNames.contains(name)) return null;
+    return database.createObjectStore(name, options);
+  }
+  function openDatabase() {
+    if (databasePromise) return databasePromise;
+    databasePromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        const documents = createStore(database, STORE_NAMES.documents);
+        documents?.createIndex("folderId", "folderId", { unique: false });
+        documents?.createIndex("updatedAt", "updatedAt", { unique: false });
+        const folders = createStore(database, STORE_NAMES.folders);
+        folders?.createIndex("parentId", "parentId", { unique: false });
+        const histories = createStore(database, STORE_NAMES.histories);
+        histories?.createIndex("documentId", "documentId", { unique: false });
+        histories?.createIndex("createdAt", "createdAt", { unique: false });
+        createStore(database, STORE_NAMES.stickies);
+        createStore(database, STORE_NAMES.settings);
+        createStore(database, STORE_NAMES.meta);
+        createStore(database, STORE_NAMES.backups);
+      };
+      request.onsuccess = () => {
+        const database = request.result;
+        database.onversionchange = () => database.close();
+        resolve(database);
+      };
+      request.onerror = () => {
+        databasePromise = null;
+        reject(request.error ?? new Error("\u61D0\u7D19\u306E\u4FDD\u5B58\u5834\u6240\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+      };
+      request.onblocked = () => reject(new Error("\u5225\u306E\u753B\u9762\u304C\u4FDD\u5B58\u5834\u6240\u306E\u66F4\u65B0\u3092\u59A8\u3052\u3066\u3044\u307E\u3059\u3002"));
+    });
+    return databasePromise;
+  }
+  async function storeFor(name, mode = "readonly") {
+    const database = await openDatabase();
+    const transaction = database.transaction(name, mode);
+    return { store: transaction.objectStore(name), transaction };
+  }
+  function transactionDone(transaction) {
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error("\u4FDD\u5B58\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+      transaction.onabort = () => reject(transaction.error ?? new Error("\u4FDD\u5B58\u51E6\u7406\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+    });
+  }
+  async function getItem(storeName, id) {
+    const { store } = await storeFor(storeName);
+    return requestToPromise(store.get(id));
+  }
+  async function getAll(storeName) {
+    const { store } = await storeFor(storeName);
+    return requestToPromise(store.getAll());
+  }
+  async function getAllByIndex(storeName, indexName, query) {
+    const { store } = await storeFor(storeName);
+    return requestToPromise(store.index(indexName).getAll(query));
+  }
+  async function putItem(storeName, value) {
+    const { store, transaction } = await storeFor(storeName, "readwrite");
+    store.put(value);
+    await transactionDone(transaction);
+    return value;
+  }
+  async function putMany(storeName, values) {
+    if (!values.length) return;
+    const { store, transaction } = await storeFor(storeName, "readwrite");
+    values.forEach((value) => store.put(value));
+    await transactionDone(transaction);
+  }
+  async function deleteItem(storeName, id) {
+    const { store, transaction } = await storeFor(storeName, "readwrite");
+    store.delete(id);
+    await transactionDone(transaction);
+  }
+  async function deleteMany(storeName, ids) {
+    if (!ids.length) return;
+    const { store, transaction } = await storeFor(storeName, "readwrite");
+    ids.forEach((id) => store.delete(id));
+    await transactionDone(transaction);
+  }
+  async function commitStoreChanges({ clear = [], deletes = {}, puts = {} }) {
+    const names = [.../* @__PURE__ */ new Set([...clear, ...Object.keys(deletes), ...Object.keys(puts)])];
+    if (!names.length) return;
+    const database = await openDatabase();
+    const transaction = database.transaction(names, "readwrite");
+    try {
+      clear.forEach((name) => transaction.objectStore(name).clear());
+      Object.entries(deletes).forEach(([name, ids]) => {
+        const store = transaction.objectStore(name);
+        ids.forEach((id) => store.delete(id));
+      });
+      Object.entries(puts).forEach(([name, values]) => {
+        const store = transaction.objectStore(name);
+        values.forEach((value) => store.put(value));
+      });
+    } catch (error) {
+      transaction.abort();
+      throw error;
+    }
+    await transactionDone(transaction);
+  }
+  async function requestPersistentStorage() {
+    if (!navigator.storage?.persist) return false;
+    try {
+      if (await navigator.storage.persisted?.()) return true;
+      return Boolean(await navigator.storage.persist());
+    } catch {
+      return false;
+    }
+  }
+  async function estimateStorage() {
+    try {
+      const estimate = await navigator.storage?.estimate?.();
+      return { usage: estimate?.usage ?? 0, quota: estimate?.quota ?? 0 };
+    } catch {
+      return { usage: 0, quota: 0 };
+    }
+  }
+
+  // src/utils.js
+  function createId(prefix = "item") {
+    const uuid = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return `${prefix}-${uuid}`;
+  }
+  function nowIso() {
+    return (/* @__PURE__ */ new Date()).toISOString();
+  }
+  function deepClone(value) {
+    return typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
+  }
+  function escapeHtml(value = "") {
+    return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+  }
+  function safeFileName(value, fallback = "\u7121\u984C") {
+    const cleaned = String(value ?? "").normalize("NFC").replace(/[\\/:*?"<>|\u0000-\u001F]/g, "\uFF3F").replace(/[. ]+$/g, "").trim();
+    return cleaned || fallback;
+  }
+  function timestampForFile(date = /* @__PURE__ */ new Date()) {
+    const pad = (number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+  }
+  function formatDateTime(value) {
+    if (!value) return "\u8A18\u9332\u306A\u3057";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "\u65E5\u6642\u4E0D\u660E";
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  }
+  function formatShortDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const diff = Date.now() - date.getTime();
+    if (diff >= 0 && diff < 6e4) return "\u305F\u3063\u305F\u4ECA";
+    if (diff >= 0 && diff < 36e5) return `${Math.max(1, Math.floor(diff / 6e4))}\u5206\u524D`;
+    if (diff >= 0 && diff < 864e5) return `${Math.floor(diff / 36e5)}\u6642\u9593\u524D`;
+    return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
+  }
+  function stripMarkdown(source = "") {
+    return String(source).replace(/```[^\n]*\n([\s\S]*?)```/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/\{([^{}|]+)\|([^{}]+)\}/g, "$1").replace(/\|([^《》\n|]{1,60})《([^《》\n]{1,60})》/g, "$1").replace(/^(?:\s{0,3}#{1,6}|\s{0,3}>|\s*[-+*]|\s*\d+\.)\s+/gm, "").replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, "").replace(new RegExp("\\*\\*|__|~~|(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)", "g"), "").replace(/\\([\\`*{}\[\]()#+\-.!_>])/g, "$1");
+  }
+  function countCharacters(source = "") {
+    return [...stripMarkdown(source).replace(/[\s\u3000]/gu, "")].length;
+  }
+  function sortByOrder(items) {
+    return [...items].sort((a, b) => {
+      const order = (a.order ?? 0) - (b.order ?? 0);
+      if (order !== 0) return order;
+      return String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""));
+    });
+  }
+  function nextTopOrder(items) {
+    if (!items.length) return 0;
+    return Math.min(...items.map((item) => Number(item.order ?? 0))) - 1;
+  }
+  function daysBetween(older, newer = /* @__PURE__ */ new Date()) {
+    if (!older) return Infinity;
+    const start = new Date(older).getTime();
+    const end = new Date(newer).getTime();
+    return Math.floor((end - start) / 864e5);
+  }
+  function isSameLocalDate(value, date = /* @__PURE__ */ new Date()) {
+    if (!value) return false;
+    const other = new Date(value);
+    return other.getFullYear() === date.getFullYear() && other.getMonth() === date.getMonth() && other.getDate() === date.getDate();
+  }
+
+  // src/library.js
+  function active(item) {
+    return item && !item.deletedAt;
+  }
+  async function markChanged() {
+    const settings = await getSettings();
+    await putItem(STORE_NAMES.settings, { ...settings, changedSinceBackup: true });
+  }
+  async function initializeLibrary() {
+    const now = nowIso();
+    const memo = await getItem(STORE_NAMES.folders, MEMO_FOLDER_ID);
+    if (!memo) {
+      await putItem(STORE_NAMES.folders, {
+        id: MEMO_FOLDER_ID,
+        name: "\u30E1\u30E2",
+        color: "gray",
+        parentId: null,
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+        revision: 1,
+        system: true
+      });
+    }
+    const settings = await getItem(STORE_NAMES.settings, DEFAULT_SETTINGS.id);
+    if (!settings) await putItem(STORE_NAMES.settings, { ...DEFAULT_SETTINGS });
+    const meta = await getItem(STORE_NAMES.meta, "library");
+    if (!meta) {
+      await putItem(STORE_NAMES.meta, {
+        id: "library",
+        libraryId: createId("library"),
+        schemaVersion: SCHEMA_VERSION,
+        createdAt: now,
+        updatedAt: now,
+        appVersion: APP_VERSION
+      });
+    }
+    await requestPersistentStorage();
+    await purgeExpiredTrash();
+  }
+  async function getSettings() {
+    return { ...DEFAULT_SETTINGS, ...await getItem(STORE_NAMES.settings, DEFAULT_SETTINGS.id) ?? {} };
+  }
+  async function saveSettings(patch, { markLibraryChanged = false } = {}) {
+    const current = await getSettings();
+    const next = { ...current, ...patch, id: DEFAULT_SETTINGS.id };
+    await putItem(STORE_NAMES.settings, next);
+    if (markLibraryChanged && patch.changedSinceBackup !== false) await markChanged();
+    return next;
+  }
+  async function listFolders({ includeDeleted = false } = {}) {
+    const folders = await getAll(STORE_NAMES.folders);
+    return includeDeleted ? folders : folders.filter(active);
+  }
+  async function listDocuments({ includeDeleted = false } = {}) {
+    const documents = await getAll(STORE_NAMES.documents);
+    return includeDeleted ? documents : documents.filter(active);
+  }
+  async function listStickies() {
+    return sortByOrder(await getAll(STORE_NAMES.stickies));
+  }
+  async function getFolder(id) {
+    return getItem(STORE_NAMES.folders, id);
+  }
+  async function getDocument(id) {
+    return getItem(STORE_NAMES.documents, id);
+  }
+  async function getFolderPath(folderId, foldersInput) {
+    const folders = foldersInput ?? await listFolders({ includeDeleted: true });
+    const map = new Map(folders.map((folder) => [folder.id, folder]));
+    const names = [];
+    const seen = /* @__PURE__ */ new Set();
+    let current = map.get(folderId);
+    while (current && !seen.has(current.id)) {
+      seen.add(current.id);
+      names.unshift(current.name);
+      current = current.parentId ? map.get(current.parentId) : null;
+    }
+    return names.join(" \uFF1E ") || "\u30E1\u30E2";
+  }
+  async function getHomeSnapshot() {
+    const [folders, documents, stickies, settings] = await Promise.all([
+      listFolders(),
+      listDocuments(),
+      listStickies(),
+      getSettings()
+    ]);
+    const roots = sortByOrder(folders.filter((folder) => folder.parentId === null));
+    const recent = [...documents].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0, 5);
+    const counts = /* @__PURE__ */ new Map();
+    for (const folder of folders) {
+      if (folder.parentId) counts.set(folder.parentId, (counts.get(folder.parentId) ?? 0) + 1);
+    }
+    for (const document2 of documents) counts.set(document2.folderId, (counts.get(document2.folderId) ?? 0) + 1);
+    return { folders, roots, documents, recent, stickies, settings, counts };
+  }
+  async function getFolderSnapshot(folderId) {
+    const [folder, folders, documents] = await Promise.all([
+      getFolder(folderId),
+      listFolders(),
+      listDocuments()
+    ]);
+    if (!active(folder)) throw new Error("\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    return {
+      folder,
+      childFolders: sortByOrder(folders.filter((item) => item.parentId === folderId)),
+      documents: sortByOrder(documents.filter((item) => item.folderId === folderId)),
+      folders
+    };
+  }
+  async function uniqueDocumentTitle(base, folderId, exceptId = null) {
+    const documents = (await listDocuments()).filter((doc) => doc.folderId === folderId && doc.id !== exceptId);
+    const title = String(base || "\u7121\u984C").trim() || "\u7121\u984C";
+    if (!documents.some((doc) => doc.title === title)) return title;
+    let number = 2;
+    while (documents.some((doc) => doc.title === `${title} ${number}`)) number += 1;
+    return `${title} ${number}`;
+  }
+  async function uniqueFolderName(base, parentId, exceptId = null) {
+    const folders = (await listFolders()).filter((folder) => folder.parentId === parentId && folder.id !== exceptId);
+    const name = String(base || "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0").trim() || "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0";
+    if (!folders.some((folder) => folder.name === name)) return name;
+    let number = 2;
+    while (folders.some((folder) => folder.name === `${name} ${number}`)) number += 1;
+    return `${name} ${number}`;
+  }
+  async function createDocument(folderId = MEMO_FOLDER_ID, type = "markdown") {
+    const target = active(await getFolder(folderId)) ? folderId : MEMO_FOLDER_ID;
+    const peers = (await listDocuments()).filter((doc) => doc.folderId === target);
+    const now = nowIso();
+    const document2 = {
+      id: createId("doc"),
+      title: await uniqueDocumentTitle("\u7121\u984C", target),
+      body: "",
+      type,
+      folderId: target,
+      color: "gray",
+      order: nextTopOrder(peers),
+      createdAt: now,
+      updatedAt: now,
+      revision: 1,
+      lastSharedRevision: 0
+    };
+    await putItem(STORE_NAMES.documents, document2);
+    await markChanged();
+    return document2;
+  }
+  async function saveDocument(id, patch, { incrementRevision = true } = {}) {
+    const current = await getDocument(id);
+    if (!active(current)) throw new Error("\u4FDD\u5B58\u3059\u308B\u539F\u7A3F\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    const title = patch.title !== void 0 ? await uniqueDocumentTitle(patch.title, patch.folderId ?? current.folderId, id) : current.title;
+    const next = {
+      ...current,
+      ...patch,
+      title,
+      id,
+      updatedAt: nowIso(),
+      revision: incrementRevision ? (current.revision ?? 0) + 1 : current.revision
+    };
+    await putItem(STORE_NAMES.documents, next);
+    await markChanged();
+    return next;
+  }
+  async function moveDocument(id, folderId) {
+    const document2 = await getDocument(id);
+    const target = await getFolder(folderId);
+    if (!active(document2) || !active(target)) throw new Error("\u79FB\u52D5\u5148\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002");
+    const peers = (await listDocuments()).filter((doc) => doc.folderId === folderId);
+    return saveDocument(id, {
+      folderId,
+      order: nextTopOrder(peers),
+      title: await uniqueDocumentTitle(document2.title, folderId, id)
+    });
+  }
+  async function createFolder(parentId = null, name = "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0", color = "gray") {
+    if (parentId) {
+      const parent = await getFolder(parentId);
+      if (!active(parent) || parent.parentId) throw new Error("\u30D5\u30A9\u30EB\u30C0\u306F2\u968E\u5C64\u307E\u3067\u3067\u3059\u3002");
+    }
+    const peers = (await listFolders()).filter((folder2) => folder2.parentId === parentId);
+    const now = nowIso();
+    const folder = {
+      id: createId("folder"),
+      name: await uniqueFolderName(name, parentId),
+      color,
+      parentId,
+      order: nextTopOrder(peers),
+      createdAt: now,
+      updatedAt: now,
+      revision: 1
+    };
+    await putItem(STORE_NAMES.folders, folder);
+    await markChanged();
+    return folder;
+  }
+  async function updateFolder(id, patch) {
+    const current = await getFolder(id);
+    if (!active(current)) throw new Error("\u30D5\u30A9\u30EB\u30C0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    const safePatch = { ...patch };
+    if (current.system) {
+      delete safePatch.name;
+      delete safePatch.parentId;
+    }
+    if (safePatch.name !== void 0) safePatch.name = await uniqueFolderName(safePatch.name, current.parentId, id);
+    const next = { ...current, ...safePatch, id, updatedAt: nowIso(), revision: (current.revision ?? 0) + 1 };
+    await putItem(STORE_NAMES.folders, next);
+    await markChanged();
+    return next;
+  }
+  async function moveFolder(id, parentId) {
+    const folder = await getFolder(id);
+    if (!active(folder) || folder.system) throw new Error("\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306F\u79FB\u52D5\u3067\u304D\u307E\u305B\u3093\u3002");
+    if (id === parentId) throw new Error("\u81EA\u5206\u81EA\u8EAB\u306E\u4E2D\u306B\u306F\u79FB\u52D5\u3067\u304D\u307E\u305B\u3093\u3002");
+    const allFolders = await listFolders();
+    const children = allFolders.filter((item) => item.parentId === id);
+    if (parentId) {
+      const parent = allFolders.find((item) => item.id === parentId);
+      if (!parent || parent.parentId) throw new Error("3\u968E\u5C64\u76EE\u306B\u306A\u308B\u5834\u6240\u3078\u306F\u79FB\u52D5\u3067\u304D\u307E\u305B\u3093\u3002");
+      if (children.length) throw new Error("\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u304C\u3042\u308B\u305F\u3081\u3001\u5225\u306E\u30D5\u30A9\u30EB\u30C0\u306E\u4E2D\u3078\u306F\u79FB\u52D5\u3067\u304D\u307E\u305B\u3093\u3002");
+    }
+    const peers = allFolders.filter((item) => item.parentId === parentId && item.id !== id);
+    return updateFolder(id, {
+      parentId,
+      order: nextTopOrder(peers),
+      name: await uniqueFolderName(folder.name, parentId, id)
+    });
+  }
+  async function saveSticky({ id, text, color = "yellow" }) {
+    const current = id ? await getItem(STORE_NAMES.stickies, id) : null;
+    const now = nowIso();
+    const sticky = current ? {
+      ...current,
+      text: String(text).trim(),
+      color,
+      updatedAt: now,
+      revision: (current.revision ?? 0) + 1
+    } : {
+      id: createId("sticky"),
+      text: String(text).trim(),
+      color,
+      order: nextTopOrder(await listStickies()),
+      createdAt: now,
+      updatedAt: now,
+      revision: 1
+    };
+    await putItem(STORE_NAMES.stickies, sticky);
+    await markChanged();
+    return sticky;
+  }
+  async function deleteSticky(id) {
+    await deleteItem(STORE_NAMES.stickies, id);
+    await markChanged();
+  }
+  async function reorderItems(storeName, ids) {
+    const items = await getAll(storeName);
+    const map = new Map(items.map((item) => [item.id, item]));
+    const changed = ids.map((id, order) => ({ ...map.get(id), order })).filter(Boolean);
+    await putMany(storeName, changed);
+    await markChanged();
+  }
+  async function createHistory(documentId, reason = "\u81EA\u52D5\u5C65\u6B74") {
+    const document2 = await getDocument(documentId);
+    if (!document2) return null;
+    const history = {
+      id: createId("history"),
+      documentId,
+      title: document2.title,
+      body: document2.body,
+      type: document2.type,
+      color: document2.color,
+      folderId: document2.folderId,
+      characterCount: countCharacters(document2.body),
+      reason,
+      createdAt: nowIso()
+    };
+    await putItem(STORE_NAMES.histories, history);
+    const histories = (await getAllByIndex(STORE_NAMES.histories, "documentId", documentId)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    await deleteMany(STORE_NAMES.histories, histories.slice(MAX_FILE_HISTORIES).map((item) => item.id));
+    return history;
+  }
+  async function listHistories(documentId) {
+    return (await getAllByIndex(STORE_NAMES.histories, "documentId", documentId)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+  async function restoreHistory(historyId) {
+    const history = await getItem(STORE_NAMES.histories, historyId);
+    if (!history) throw new Error("\u5C65\u6B74\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    await createHistory(history.documentId, "\u5FA9\u5143\u76F4\u524D");
+    return saveDocument(history.documentId, { body: history.body, title: history.title, type: history.type });
+  }
+  async function duplicateHistory(historyId) {
+    const history = await getItem(STORE_NAMES.histories, historyId);
+    if (!history) throw new Error("\u5C65\u6B74\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    const document2 = await createDocument(history.folderId, history.type);
+    const date = new Date(history.createdAt);
+    const suffix = `${date.getFullYear()}\u5E74${date.getMonth() + 1}\u6708${date.getDate()}\u65E5\u306E\u5C65\u6B74`;
+    return saveDocument(document2.id, { title: `${history.title}\uFF08${suffix}\uFF09`, body: history.body, color: history.color });
+  }
+  async function descendantFolderIds(rootId, folders) {
+    const ids = /* @__PURE__ */ new Set([rootId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const folder of folders) {
+        if (folder.parentId && ids.has(folder.parentId) && !ids.has(folder.id)) {
+          ids.add(folder.id);
+          changed = true;
+        }
+      }
+    }
+    return ids;
+  }
+  async function moveToTrash(kind, id) {
+    const now = nowIso();
+    if (kind === "document") {
+      const document2 = await getDocument(id);
+      if (!active(document2)) return;
+      await createHistory(id, "\u30B4\u30DF\u7BB1\u3078\u79FB\u52D5\u3059\u308B\u524D");
+      await putItem(STORE_NAMES.documents, {
+        ...document2,
+        deletedAt: now,
+        trashRoot: true,
+        originalFolderId: document2.folderId,
+        originalOrder: document2.order
+      });
+    } else {
+      const root = await getFolder(id);
+      if (!active(root) || root.system) throw new Error("\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306F\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3002");
+      await createInternalBackup("\u30D5\u30A9\u30EB\u30C0\u3092\u30B4\u30DF\u7BB1\u3078\u79FB\u3059\u524D");
+      const folders = await listFolders();
+      const ids = await descendantFolderIds(id, folders);
+      const documents = await listDocuments();
+      await commitStoreChanges({ puts: {
+        [STORE_NAMES.folders]: folders.filter((folder) => ids.has(folder.id)).map((folder) => ({
+          ...folder,
+          deletedAt: now,
+          trashRoot: folder.id === id,
+          originalParentId: folder.parentId,
+          originalOrder: folder.order
+        })),
+        [STORE_NAMES.documents]: documents.filter((doc) => ids.has(doc.folderId)).map((doc) => ({
+          ...doc,
+          deletedAt: now,
+          trashRoot: false,
+          originalFolderId: doc.folderId,
+          originalOrder: doc.order
+        }))
+      } });
+    }
+    await markChanged();
+  }
+  async function listTrash() {
+    const [documents, folders] = await Promise.all([
+      listDocuments({ includeDeleted: true }),
+      listFolders({ includeDeleted: true })
+    ]);
+    return [
+      ...documents.filter((item) => item.deletedAt && item.trashRoot).map((item) => ({ ...item, kind: "document" })),
+      ...folders.filter((item) => item.deletedAt && item.trashRoot).map((item) => ({ ...item, kind: "folder" }))
+    ].sort((a, b) => String(b.deletedAt).localeCompare(String(a.deletedAt)));
+  }
+  async function restoreFromTrash(kind, id, { restoreFolder = true } = {}) {
+    const folders = await listFolders({ includeDeleted: true });
+    if (kind === "document") {
+      const document2 = await getDocument(id);
+      if (!document2?.deletedAt) return null;
+      let folderId = document2.originalFolderId;
+      const original = folders.find((folder) => folder.id === folderId);
+      if (original?.deletedAt && restoreFolder) await restoreFromTrash("folder", original.id);
+      const resolved = await getFolder(folderId);
+      if (!active(resolved)) folderId = MEMO_FOLDER_ID;
+      const restored = {
+        ...document2,
+        folderId,
+        order: document2.originalOrder ?? 0,
+        deletedAt: null,
+        trashRoot: false,
+        updatedAt: nowIso()
+      };
+      await putItem(STORE_NAMES.documents, restored);
+      await markChanged();
+      return { item: restored, fallbackToMemo: folderId === MEMO_FOLDER_ID && document2.originalFolderId !== MEMO_FOLDER_ID };
+    }
+    const root = folders.find((folder) => folder.id === id);
+    if (!root?.deletedAt) return null;
+    const ids = await descendantFolderIds(id, folders);
+    const documents = await listDocuments({ includeDeleted: true });
+    let parentId = root.originalParentId ?? null;
+    if (parentId) {
+      const parent = folders.find((folder) => folder.id === parentId);
+      if (parent?.deletedAt) await restoreFromTrash("folder", parent.id);
+      if (!active(await getFolder(parentId))) parentId = null;
+    }
+    await commitStoreChanges({ puts: {
+      [STORE_NAMES.folders]: folders.filter((folder) => ids.has(folder.id)).map((folder) => ({
+        ...folder,
+        parentId: folder.id === id ? parentId : folder.originalParentId ?? folder.parentId,
+        order: folder.originalOrder ?? folder.order,
+        deletedAt: null,
+        trashRoot: false,
+        updatedAt: nowIso()
+      })),
+      [STORE_NAMES.documents]: documents.filter((doc) => ids.has(doc.originalFolderId ?? doc.folderId)).map((doc) => ({
+        ...doc,
+        folderId: doc.originalFolderId ?? doc.folderId,
+        order: doc.originalOrder ?? doc.order,
+        deletedAt: null,
+        trashRoot: false,
+        updatedAt: nowIso()
+      }))
+    } });
+    await markChanged();
+    return { item: await getFolder(id), fallbackToMemo: false };
+  }
+  async function permanentlyDelete(kind, id) {
+    if (kind === "document") {
+      const histories = await listHistories(id);
+      await commitStoreChanges({ deletes: {
+        [STORE_NAMES.histories]: histories.map((item) => item.id),
+        [STORE_NAMES.documents]: [id]
+      } });
+    } else {
+      const folders = await listFolders({ includeDeleted: true });
+      const ids = await descendantFolderIds(id, folders);
+      const documents = (await listDocuments({ includeDeleted: true })).filter((doc) => ids.has(doc.folderId) || ids.has(doc.originalFolderId));
+      const histories = await Promise.all(documents.map((document2) => listHistories(document2.id)));
+      await commitStoreChanges({ deletes: {
+        [STORE_NAMES.histories]: histories.flat().map((item) => item.id),
+        [STORE_NAMES.documents]: documents.map((item) => item.id),
+        [STORE_NAMES.folders]: [...ids]
+      } });
+    }
+    await markChanged();
+  }
+  async function emptyTrash() {
+    const items = await listTrash();
+    for (const item of items) await permanentlyDelete(item.kind, item.id);
+  }
+  async function purgeExpiredTrash() {
+    const items = await listTrash();
+    for (const item of items) {
+      if (daysBetween(item.deletedAt) >= TRASH_DAYS) await permanentlyDelete(item.kind, item.id);
+    }
+  }
+  async function snapshotLibrary() {
+    const [meta, folders, documents, stickies, settings, histories] = await Promise.all([
+      getItem(STORE_NAMES.meta, "library"),
+      listFolders({ includeDeleted: true }),
+      listDocuments({ includeDeleted: true }),
+      getAll(STORE_NAMES.stickies),
+      getSettings(),
+      getAll(STORE_NAMES.histories)
+    ]);
+    return { meta, folders, documents, stickies, settings, histories };
+  }
+  async function createInternalBackup(reason) {
+    const backup = { id: createId("backup"), reason, createdAt: nowIso(), data: await snapshotLibrary() };
+    await putItem(STORE_NAMES.backups, backup);
+    const backups = (await getAll(STORE_NAMES.backups)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    await deleteMany(STORE_NAMES.backups, backups.slice(MAX_LIBRARY_BACKUPS).map((item) => item.id));
+    return backup;
+  }
+  async function listInternalBackups() {
+    return (await getAll(STORE_NAMES.backups)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+  async function restoreInternalBackup(id) {
+    const backup = await getItem(STORE_NAMES.backups, id);
+    if (!backup?.data) throw new Error("\u81EA\u52D5\u4FDD\u8B77\u306E\u8A18\u9332\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    await createInternalBackup("\u81EA\u52D5\u4FDD\u8B77\u304B\u3089\u623B\u3059\u76F4\u524D");
+    const data = backup.data;
+    const settings = { ...DEFAULT_SETTINGS, ...data.settings ?? {}, id: DEFAULT_SETTINGS.id, changedSinceBackup: true };
+    await commitStoreChanges({
+      clear: [
+        STORE_NAMES.documents,
+        STORE_NAMES.folders,
+        STORE_NAMES.stickies,
+        STORE_NAMES.histories,
+        STORE_NAMES.settings,
+        STORE_NAMES.meta
+      ],
+      puts: {
+        [STORE_NAMES.documents]: data.documents ?? [],
+        [STORE_NAMES.folders]: data.folders ?? [],
+        [STORE_NAMES.stickies]: data.stickies ?? [],
+        [STORE_NAMES.histories]: data.histories ?? [],
+        [STORE_NAMES.settings]: [settings],
+        [STORE_NAMES.meta]: data.meta ? [data.meta] : []
+      }
+    });
+    await initializeLibrary();
+    return backup;
+  }
+  async function buildExport(scope = "library", rootId = null) {
+    const snapshot = await snapshotLibrary();
+    let folders = snapshot.folders;
+    let documents = snapshot.documents;
+    let stickies = snapshot.stickies;
+    if (scope === "document") {
+      const document2 = documents.find((item) => item.id === rootId && !item.deletedAt);
+      if (!document2) throw new Error("\u66F8\u304D\u51FA\u3059\u539F\u7A3F\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+      const ids = /* @__PURE__ */ new Set();
+      let folder = folders.find((item) => item.id === document2.folderId);
+      while (folder) {
+        ids.add(folder.id);
+        folder = folder.parentId ? folders.find((item) => item.id === folder.parentId) : null;
+      }
+      documents = [document2];
+      folders = folders.filter((item) => ids.has(item.id) && !item.deletedAt);
+      stickies = [];
+    } else if (scope === "folder") {
+      const activeFolders = folders.filter((item) => !item.deletedAt);
+      const ids = await descendantFolderIds(rootId, activeFolders);
+      folders = activeFolders.filter((item) => ids.has(item.id));
+      documents = documents.filter((item) => !item.deletedAt && ids.has(item.folderId));
+      stickies = [];
+    }
+    const payload = {
+      format: "kaishi-common-json",
+      schemaVersion: SCHEMA_VERSION,
+      projectId: snapshot.meta?.libraryId,
+      exportedAt: nowIso(),
+      appVersion: APP_VERSION,
+      sourceApp: "kaishi",
+      exportScope: scope === "document" ? "file" : scope,
+      exportedRootIds: rootId ? [rootId] : [],
+      folders: deepClone(folders),
+      documents: deepClone(documents),
+      stickies: deepClone(stickies),
+      settings: scope === "library" ? deepClone(snapshot.settings) : void 0
+    };
+    return payload;
+  }
+  function validateImport(payload) {
+    const recognized = payload?.format === "kaishi-common-json" || ["kaishi", "fuzukue"].includes(payload?.sourceApp);
+    if (!recognized) throw new Error("\u61D0\u7D19\u30FB\u6587\u673A\u7528\u306EJSON\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002");
+    if (!Number.isInteger(payload.schemaVersion) || payload.schemaVersion > SCHEMA_VERSION) {
+      throw new Error("\u3053\u306EJSON\u306F\u3001\u73FE\u5728\u306E\u61D0\u7D19\u3088\u308A\u65B0\u3057\u3044\u5F62\u5F0F\u3067\u3059\u3002\u61D0\u7D19\u3092\u66F4\u65B0\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    if (!Array.isArray(payload.documents) || !Array.isArray(payload.folders)) throw new Error("JSON\u306E\u4E2D\u8EAB\u304C\u9014\u4E2D\u3067\u6B20\u3051\u3066\u3044\u307E\u3059\u3002");
+    if (payload.documents.some((item) => !item || typeof item.id !== "string" || typeof item.body !== "string") || payload.folders.some((item) => !item || typeof item.id !== "string")) {
+      throw new Error("JSON\u5185\u306E\u539F\u7A3F\u307E\u305F\u306F\u30D5\u30A9\u30EB\u30C0\u60C5\u5831\u304C\u58CA\u308C\u3066\u3044\u307E\u3059\u3002");
+    }
+    const exportScope = payload.exportScope ?? (payload.scope === "document" ? "file" : payload.scope);
+    const scope = exportScope === "file" ? "document" : exportScope;
+    if (!["document", "folder", "library"].includes(scope)) throw new Error("JSON\u306E\u66F8\u304D\u51FA\u3057\u7BC4\u56F2\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002");
+    return {
+      ...payload,
+      projectId: payload.projectId ?? payload.libraryId,
+      sourceApp: payload.sourceApp ?? (payload.app === APP_NAME ? "kaishi" : payload.app),
+      exportScope,
+      scope
+    };
+  }
+  async function inspectImport(payloadInput) {
+    const payload = validateImport(payloadInput);
+    const [localDocuments, localFolders] = await Promise.all([
+      listDocuments({ includeDeleted: true }),
+      listFolders({ includeDeleted: true })
+    ]);
+    const localMap = new Map(localDocuments.map((item) => [item.id, item]));
+    const conflicts = payload.documents.filter((incoming) => {
+      const local = localMap.get(incoming.id);
+      return local && local.body !== incoming.body;
+    }).map((incoming) => ({ incoming, local: localMap.get(incoming.id) }));
+    const missingFolderIds = payload.documents.filter((doc) => doc.folderId && !localFolders.some((folder) => folder.id === doc.folderId && !folder.deletedAt) && !payload.folders.some((folder) => folder.id === doc.folderId && !folder.deletedAt)).map((doc) => doc.folderId);
+    const incomingDocumentIds = new Set(payload.documents.map((item) => item.id));
+    const incomingFolderIds = new Set(payload.folders.map((item) => item.id));
+    const incomingStickyIds = new Set((payload.stickies ?? []).map((item) => item.id));
+    const localStickies = await getAll(STORE_NAMES.stickies);
+    return {
+      payload,
+      conflicts,
+      missingFolderIds: [...new Set(missingFolderIds)],
+      counts: {
+        documents: payload.documents.length,
+        folders: payload.folders.length,
+        stickies: payload.stickies?.length ?? 0,
+        added: payload.documents.filter((item) => !localMap.has(item.id)).length,
+        updated: payload.documents.filter((item) => localMap.has(item.id)).length
+      },
+      replacementLoss: {
+        documents: localDocuments.filter((item) => !item.deletedAt && !incomingDocumentIds.has(item.id)).length,
+        folders: localFolders.filter((item) => !item.deletedAt && !incomingFolderIds.has(item.id)).length,
+        stickies: localStickies.filter((item) => !incomingStickyIds.has(item.id)).length,
+        trash: [...localDocuments, ...localFolders].filter((item) => item.deletedAt && !(item.title ? incomingDocumentIds : incomingFolderIds).has(item.id)).length
+      }
+    };
+  }
+  async function applyImport(payloadInput, { mode = "merge", resolutions = {} } = {}) {
+    const payload = validateImport(payloadInput);
+    if (mode === "replace" && payload.scope !== "library") throw new Error("\u66F8\u5EAB\u5168\u4F53\u306EJSON\u3060\u3051\u304C\u5FA9\u65E7\u7528\u306E\u7F6E\u304D\u63DB\u3048\u306B\u4F7F\u3048\u307E\u3059\u3002");
+    await createInternalBackup(mode === "replace" ? "\u66F8\u5EAB\u7F6E\u304D\u63DB\u3048\u76F4\u524D" : "JSON\u8AAD\u307F\u8FBC\u307F\u76F4\u524D");
+    const report = { added: 0, updated: 0, duplicated: 0, skipped: 0 };
+    const [localFolders, localDocuments, localStickies, localHistories, currentSettings] = await Promise.all([
+      listFolders({ includeDeleted: true }),
+      listDocuments({ includeDeleted: true }),
+      getAll(STORE_NAMES.stickies),
+      getAll(STORE_NAMES.histories),
+      getSettings()
+    ]);
+    const folderMap = new Map((mode === "replace" ? [] : localFolders).map((folder) => [folder.id, deepClone(folder)]));
+    for (const incomingRaw of payload.folders) {
+      const incoming = { ...incomingRaw, deletedAt: incomingRaw.deletedAt ?? null };
+      const local = folderMap.get(incoming.id);
+      if (!local) {
+        const peers = [...folderMap.values()].filter((folder) => folder.parentId === incoming.parentId && !folder.deletedAt);
+        incoming.order = nextTopOrder(peers);
+        folderMap.set(incoming.id, incoming);
+      } else if (String(incoming.updatedAt ?? "") > String(local.updatedAt ?? "")) {
+        folderMap.set(incoming.id, { ...local, ...incoming });
+      }
+    }
+    if (!folderMap.has(MEMO_FOLDER_ID)) {
+      const now = nowIso();
+      folderMap.set(MEMO_FOLDER_ID, {
+        id: MEMO_FOLDER_ID,
+        name: "\u30E1\u30E2",
+        color: "gray",
+        parentId: null,
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+        revision: 1,
+        system: true
+      });
+    }
+    folderMap.set(MEMO_FOLDER_ID, {
+      ...folderMap.get(MEMO_FOLDER_ID),
+      id: MEMO_FOLDER_ID,
+      name: "\u30E1\u30E2",
+      parentId: null,
+      system: true,
+      deletedAt: null
+    });
+    folderMap.forEach((folder, id) => {
+      if (id === MEMO_FOLDER_ID || !folder.parentId) return;
+      const parent = folderMap.get(folder.parentId);
+      if (!parent || parent.deletedAt || parent.id === id || parent.parentId) {
+        folderMap.set(id, { ...folder, parentId: null });
+      }
+    });
+    const documentMap = new Map((mode === "replace" ? [] : localDocuments).map((document2) => [document2.id, deepClone(document2)]));
+    const histories = mode === "replace" ? [] : deepClone(localHistories);
+    const uniqueImportedTitle = (base, folderId) => {
+      const titleBase = String(base || "\u7121\u984C").trim() || "\u7121\u984C";
+      const titles = new Set([...documentMap.values()].filter((item) => !item.deletedAt && item.folderId === folderId).map((item) => item.title));
+      if (!titles.has(titleBase)) return titleBase;
+      let number = 2;
+      while (titles.has(`${titleBase} ${number}`)) number += 1;
+      return `${titleBase} ${number}`;
+    };
+    for (const incomingRaw of payload.documents) {
+      const incoming = deepClone(incomingRaw);
+      if (folderMap.get(incoming.folderId)?.deletedAt || !folderMap.has(incoming.folderId)) incoming.folderId = MEMO_FOLDER_ID;
+      const local = documentMap.get(incoming.id);
+      if (!local) {
+        const peers2 = [...documentMap.values()].filter((doc) => !doc.deletedAt && doc.folderId === incoming.folderId);
+        incoming.order = nextTopOrder(peers2);
+        documentMap.set(incoming.id, incoming);
+        report.added += 1;
+        continue;
+      }
+      if (local.body === incoming.body) {
+        if (String(incoming.updatedAt ?? "") > String(local.updatedAt ?? "")) {
+          documentMap.set(incoming.id, { ...local, ...incoming });
+          report.updated += 1;
+        } else report.skipped += 1;
+        continue;
+      }
+      const resolution = resolutions[incoming.id] ?? "both";
+      if (resolution === "local") {
+        report.skipped += 1;
+        continue;
+      }
+      if (resolution === "incoming") {
+        histories.push({
+          id: createId("history"),
+          documentId: local.id,
+          title: local.title,
+          body: local.body,
+          type: local.type,
+          color: local.color,
+          folderId: local.folderId,
+          characterCount: countCharacters(local.body),
+          reason: "JSON\u4E0A\u66F8\u304D\u76F4\u524D",
+          createdAt: nowIso()
+        });
+        documentMap.set(incoming.id, incoming);
+        report.updated += 1;
+        continue;
+      }
+      const duplicateId = createId("doc");
+      const title = uniqueImportedTitle(`${incoming.title}\uFF08\u8AAD\u307F\u8FBC\u307F\uFF09`, incoming.folderId);
+      const peers = [...documentMap.values()].filter((doc) => !doc.deletedAt && doc.folderId === incoming.folderId);
+      documentMap.set(duplicateId, {
+        ...incoming,
+        id: duplicateId,
+        title,
+        revision: 1,
+        order: nextTopOrder(peers),
+        sourceDocumentId: incoming.id,
+        createdAt: nowIso(),
+        updatedAt: nowIso()
+      });
+      report.duplicated += 1;
+    }
+    const stickyMap = new Map((mode === "replace" ? [] : localStickies).map((sticky) => [sticky.id, deepClone(sticky)]));
+    let topOrder = nextTopOrder([...stickyMap.values()]);
+    for (const sticky of payload.stickies ?? []) {
+      const local = stickyMap.get(sticky.id);
+      if (!local) stickyMap.set(sticky.id, { ...sticky, order: topOrder-- });
+      else if (String(sticky.updatedAt ?? "") > String(local.updatedAt ?? "")) stickyMap.set(sticky.id, { ...local, ...sticky });
+    }
+    const limitedHistories = [];
+    const historyGroups = /* @__PURE__ */ new Map();
+    histories.forEach((history) => {
+      const group = historyGroups.get(history.documentId) ?? [];
+      group.push(history);
+      historyGroups.set(history.documentId, group);
+    });
+    historyGroups.forEach((group) => limitedHistories.push(...group.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, MAX_FILE_HISTORIES)));
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      ...mode === "replace" ? payload.settings ?? {} : currentSettings,
+      id: DEFAULT_SETTINGS.id,
+      changedSinceBackup: true
+    };
+    const storeNames = [
+      STORE_NAMES.documents,
+      STORE_NAMES.folders,
+      STORE_NAMES.stickies,
+      STORE_NAMES.histories,
+      STORE_NAMES.settings
+    ];
+    await commitStoreChanges({
+      clear: storeNames,
+      puts: {
+        [STORE_NAMES.documents]: [...documentMap.values()],
+        [STORE_NAMES.folders]: [...folderMap.values()],
+        [STORE_NAMES.stickies]: [...stickyMap.values()],
+        [STORE_NAMES.histories]: limitedHistories,
+        [STORE_NAMES.settings]: [settings]
+      }
+    });
+    return report;
+  }
+  async function markBackupSuccess() {
+    return saveSettings({ lastBackupAt: nowIso(), changedSinceBackup: false, backupDismissedDate: null });
+  }
+  async function shouldRemindBackup(settingsInput) {
+    const settings = settingsInput ?? await getSettings();
+    if (!settings.changedSinceBackup) return false;
+    if (isSameLocalDate(settings.backupDismissedDate)) return false;
+    const base = settings.lastBackupAt ?? (await getItem(STORE_NAMES.meta, "library"))?.createdAt;
+    return daysBetween(base) >= BACKUP_REMINDER_DAYS;
+  }
+  async function dismissBackupForToday() {
+    return saveSettings({ backupDismissedDate: nowIso() });
+  }
+  function externalFileName(scope, title = "") {
+    const stamp = timestampForFile();
+    if (scope === "document") return `\u61D0\u7D19_${safeFileName(title)}_${stamp}.json`;
+    if (scope === "folder") return `\u61D0\u7D19_${safeFileName(title)}_${stamp}.json`;
+    return `\u61D0\u7D19_\u66F8\u5EAB\u5168\u4F53_${stamp}.json`;
+  }
+
+  // src/io.js
+  function fileFromText(name, text, type = "text/plain;charset=utf-8") {
+    return new File([text], name, { type, lastModified: Date.now() });
+  }
+  async function copyPlainText(text) {
+    if (!navigator.clipboard?.writeText) throw new Error("\u3053\u306E\u753B\u9762\u3067\u306F\u30B3\u30D4\u30FC\u6A5F\u80FD\u3092\u4F7F\u7528\u3067\u304D\u307E\u305B\u3093\u3002");
+    await navigator.clipboard.writeText(String(text));
+  }
+  async function copyRichText(html, plainText) {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+      throw new Error("\u66F8\u5F0F\u4ED8\u304D\u30B3\u30D4\u30FC\u3092\u4F7F\u7528\u3067\u304D\u307E\u305B\u3093\u3002");
+    }
+    const item = new ClipboardItem({
+      "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([plainText], { type: "text/plain" })
+    });
+    await navigator.clipboard.write([item]);
+  }
+  function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+  async function shareFile(file, title = "\u61D0\u7D19\u304B\u3089\u5171\u6709") {
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      try {
+        await navigator.share({ title, files: [file] });
+        return { method: "share" };
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          const cancelled = new Error("\u5171\u6709\u3092\u4E2D\u6B62\u3057\u307E\u3057\u305F\u3002");
+          cancelled.cancelled = true;
+          throw cancelled;
+        }
+      }
+    }
+    downloadFile(file);
+    return { method: "download" };
+  }
+  async function readJsonFile(file) {
+    if (!file) throw new Error("\u30D5\u30A1\u30A4\u30EB\u304C\u9078\u3070\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+    const maxBytes = 50 * 1024 * 1024;
+    if (file.size > maxBytes) throw new Error("\u3053\u306EJSON\u306F50MB\u3092\u8D85\u3048\u3066\u3044\u308B\u305F\u3081\u3001\u5B89\u5168\u306B\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3002");
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      throw new Error("\u30D5\u30A1\u30A4\u30EB\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("JSON\u306E\u5F62\u304C\u58CA\u308C\u3066\u3044\u308B\u305F\u3081\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3002");
+    }
+  }
+
+  // src/lock.js
+  var ACTIVE_KEY = "kaishi-active-instance";
+  var CHANNEL_NAME = "kaishi-instance-channel";
+  var SESSION_KEY = "kaishi-instance-id";
+  var FRESH_MS = 8e3;
+  function readActive() {
+    try {
+      return JSON.parse(localStorage.getItem(ACTIVE_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+  var InstanceGuard = class {
+    constructor({ beforeRelinquish, onTakenOver } = {}) {
+      let rememberedId = null;
+      try {
+        rememberedId = globalThis.sessionStorage?.getItem(SESSION_KEY);
+      } catch {
+      }
+      this.id = rememberedId || createId("instance");
+      try {
+        globalThis.sessionStorage?.setItem(SESSION_KEY, this.id);
+      } catch {
+      }
+      this.beforeRelinquish = beforeRelinquish;
+      this.onTakenOver = onTakenOver;
+      this.channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(CHANNEL_NAME) : null;
+      this.timer = null;
+      this.active = false;
+      this.pendingTakeover = null;
+      this.channel?.addEventListener("message", (event) => this.handleMessage(event.data));
+    }
+    hasFreshOther() {
+      const record = readActive();
+      return Boolean(record && record.id !== this.id && Date.now() - record.at < FRESH_MS);
+    }
+    start() {
+      if (this.hasFreshOther()) return false;
+      this.claim();
+      return true;
+    }
+    claim() {
+      this.active = true;
+      this.writeHeartbeat();
+      clearInterval(this.timer);
+      this.timer = setInterval(() => this.writeHeartbeat(), 2500);
+      this.channel?.postMessage({ type: "claimed", from: this.id });
+    }
+    writeHeartbeat() {
+      if (!this.active) return;
+      try {
+        localStorage.setItem(ACTIVE_KEY, JSON.stringify({ id: this.id, at: Date.now() }));
+      } catch {
+      }
+    }
+    async requestTakeover() {
+      const other = readActive()?.id;
+      if (!other || Date.now() - (readActive()?.at ?? 0) >= FRESH_MS) {
+        this.claim();
+        return { forced: true };
+      }
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          this.pendingTakeover = null;
+          const record = readActive();
+          if (record?.id === other && Date.now() - record.at < FRESH_MS) {
+            resolve({ blocked: true });
+          } else {
+            this.claim();
+            resolve({ forced: true });
+          }
+        }, 4e3);
+        this.pendingTakeover = () => {
+          clearTimeout(timeout);
+          this.pendingTakeover = null;
+          this.claim();
+          resolve({ forced: false });
+        };
+        this.channel?.postMessage({ type: "takeover-request", from: this.id, target: other });
+      });
+    }
+    async handleMessage(message) {
+      if (!message || message.from === this.id) return;
+      if (message.type === "takeover-request" && this.active && (!message.target || message.target === this.id)) {
+        try {
+          await this.beforeRelinquish?.();
+        } catch {
+          return;
+        }
+        this.release(false);
+        this.channel?.postMessage({ type: "takeover-ready", from: this.id, target: message.from });
+        this.onTakenOver?.();
+      } else if (message.type === "takeover-ready" && message.target === this.id) {
+        this.pendingTakeover?.();
+      } else if (message.type === "claimed" && this.active) {
+        const record = readActive();
+        if (record?.id !== this.id && record?.id === message.from) {
+          this.release(false);
+          this.onTakenOver?.();
+        }
+      }
+    }
+    release(clearRecord = true) {
+      this.active = false;
+      clearInterval(this.timer);
+      this.timer = null;
+      if (clearRecord) {
+        const record = readActive();
+        if (record?.id === this.id) localStorage.removeItem(ACTIVE_KEY);
+      }
+    }
+    destroy() {
+      this.release();
+      this.channel?.close();
+    }
+  };
+
+  // src/markdown.js
+  function safeUrl(raw) {
+    const value = String(raw ?? "").trim();
+    if (/^(https?:|mailto:)/i.test(value)) return escapeHtml(value);
+    return "#";
+  }
+  function renderInline(source = "") {
+    let html = escapeHtml(source);
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => `<a href="${safeUrl(url)}" rel="noopener noreferrer">${label}</a>`);
+    html = html.replace(/\{([^{}|]+)\|([^{}]+)\}/g, "<ruby>$1<rp>\uFF08</rp><rt>$2</rt><rp>\uFF09</rp></ruby>");
+    html = html.replace(/\|([^《》\n|]{1,60})《([^《》\n]{1,60})》/g, "<ruby>$1<rp>\uFF08</rp><rt>$2</rt><rp>\uFF09</rp></ruby>");
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
+    html = html.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
+    html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+    html = html.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>");
+    return html;
+  }
+  function renderMarkdown(source = "") {
+    const lines = String(source).replace(/\r\n?/g, "\n").split("\n");
+    const output = [];
+    let listType = null;
+    let quoteOpen = false;
+    let codeOpen = false;
+    const closeList = () => {
+      if (listType) output.push(`</${listType}>`);
+      listType = null;
+    };
+    const closeQuote = () => {
+      if (quoteOpen) output.push("</blockquote>");
+      quoteOpen = false;
+    };
+    for (const line of lines) {
+      if (/^```/.test(line)) {
+        closeList();
+        closeQuote();
+        output.push(codeOpen ? "</code></pre>" : "<pre><code>");
+        codeOpen = !codeOpen;
+        continue;
+      }
+      if (codeOpen) {
+        output.push(`${escapeHtml(line)}
+`);
+        continue;
+      }
+      if (!line.trim()) {
+        closeList();
+        closeQuote();
+        output.push('<div class="blank-line" aria-hidden="true"></div>');
+        continue;
+      }
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        closeList();
+        closeQuote();
+        const level = heading[1].length;
+        output.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+        continue;
+      }
+      if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+        closeList();
+        closeQuote();
+        output.push("<hr>");
+        continue;
+      }
+      const quote = line.match(/^>\s?(.*)$/);
+      if (quote) {
+        closeList();
+        if (!quoteOpen) {
+          output.push("<blockquote>");
+          quoteOpen = true;
+        }
+        output.push(`<p>${renderInline(quote[1])}</p>`);
+        continue;
+      }
+      closeQuote();
+      const unordered = line.match(/^\s*[-+*]\s+(.+)$/);
+      const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
+      if (unordered || ordered) {
+        const nextType = ordered ? "ol" : "ul";
+        if (listType !== nextType) {
+          closeList();
+          output.push(`<${nextType}>`);
+          listType = nextType;
+        }
+        output.push(`<li>${renderInline((ordered || unordered)[1])}</li>`);
+        continue;
+      }
+      closeList();
+      output.push(`<p>${renderInline(line)}</p>`);
+    }
+    closeList();
+    closeQuote();
+    if (codeOpen) output.push("</code></pre>");
+    return output.join("\n");
+  }
+  function markdownToPlainText(source = "") {
+    return stripMarkdown(source).replace(/\n{3,}/g, "\n\n");
+  }
+
+  // src/undo.js
+  var UndoManager = class {
+    constructor(limit = 50) {
+      this.limit = limit;
+      this.undoStack = [];
+      this.redoStack = [];
+    }
+    clear() {
+      this.undoStack = [];
+      this.redoStack = [];
+    }
+    record(snapshot) {
+      const previous = this.undoStack.at(-1);
+      if (previous && previous.value === snapshot.value && previous.start === snapshot.start && previous.end === snapshot.end) return;
+      this.undoStack.push({ ...snapshot });
+      if (this.undoStack.length > this.limit) this.undoStack.shift();
+      this.redoStack = [];
+    }
+    undo(current) {
+      const target = this.undoStack.pop();
+      if (!target) return null;
+      this.redoStack.push({ ...current });
+      return target;
+    }
+    redo(current) {
+      const target = this.redoStack.pop();
+      if (!target) return null;
+      this.undoStack.push({ ...current });
+      return target;
+    }
+    get canUndo() {
+      return this.undoStack.length > 0;
+    }
+    get canRedo() {
+      return this.redoStack.length > 0;
+    }
+  };
+
+  // src/app.js
+  var app = document.querySelector("#app");
+  var sheet = document.querySelector("#sheet");
+  var toast = document.querySelector("#toast");
+  var jsonInput = document.querySelector("#json-file-input");
+  var runtime = {
+    route: { name: "home" },
+    online: navigator.onLine,
+    updateReady: false,
+    updating: false,
+    updateRegistration: null,
+    guard: null,
+    editor: null,
+    importInspection: null,
+    importFileName: "",
+    pendingConflictIndex: 0,
+    conflictResolutions: {},
+    settings: null
+  };
+  var undoManager = new UndoManager(50);
+  var toastTimer;
+  var stopEditorViewportSync = () => {
+  };
+  function isStandalone() {
+    const local = ["localhost", "127.0.0.1"].includes(location.hostname);
+    const dev = local && new URLSearchParams(location.search).get("dev") === "1";
+    return dev || matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  }
+  function showToast(message, duration = 2600) {
+    clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.hidden = false;
+    toastTimer = setTimeout(() => {
+      toast.hidden = true;
+    }, duration);
+  }
+  function colorValue(id) {
+    return COLOR_MAP[id] ?? COLOR_MAP.gray;
+  }
+  function colorChoices(selected = "gray", name = "color") {
+    return `<div class="color-choices" role="radiogroup" aria-label="\u8272">
+    ${COLORS.map((color) => `<button type="button" class="color-choice ${color.id === selected ? "selected" : ""}" style="--choice-color:${color.value}" data-color-value="${color.id}" data-color-name="${name}" data-color-label="${color.label}" aria-pressed="${color.id === selected}">${color.id === selected ? "\u2713" : ""}<span class="sr-only">${color.label}</span></button>`).join("")}
+  </div>`;
+  }
+  function applyAppearance(settings) {
+    runtime.settings = settings;
+    const root = document.documentElement;
+    root.dataset.theme = settings.theme;
+    root.style.setProperty("--editor-font-size", `${settings.fontSize}px`);
+    root.style.setProperty("--editor-line-height", { compact: 1.65, standard: 1.9, wide: 2.15 }[settings.lineHeight] ?? 1.9);
+    root.style.setProperty("--editor-margin", { compact: "12px", standard: "20px", wide: "30px" }[settings.pageMargin] ?? "20px");
+    root.style.setProperty("--editor-font", settings.fontFamily === "gothic" ? "var(--font-sans)" : "var(--font-mincho)");
+  }
+  function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false } = {}) {
+    return `<header class="app-header">
+    ${back ? `<button class="icon-button" data-action="${back}" aria-label="\u623B\u308B">\u2190</button>` : ""}
+    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span>${escapeHtml(title)}</span>${subtitle ? `<span class="save-state">${escapeHtml(subtitle)}</span>` : ""}</h1>`}
+    ${extra}
+    ${menu ? `<button class="icon-button" data-action="${menu}" aria-label="\u30E1\u30CB\u30E5\u30FC">\u2026</button>` : ""}
+  </header>`;
+  }
+  function setRoute(route) {
+    runtime.route = { ...route };
+    renderRoute().catch(handleFatal);
+  }
+  async function renderRoute() {
+    closeSheet();
+    clearEditorTimers();
+    if (runtime.route.name === "home") return renderHome();
+    if (runtime.route.name === "folder") return renderFolder(runtime.route.folderId);
+    if (runtime.route.name === "editor") return renderEditor(runtime.route.documentId);
+    if (runtime.route.name === "preview") return renderPreview(runtime.route.documentId);
+    if (runtime.route.name === "trash") return renderTrash();
+    if (runtime.route.name === "history") return renderHistory(runtime.route.documentId);
+    if (runtime.route.name === "settings") return renderSettings();
+    if (runtime.route.name === "about") return renderAbout();
+    return renderHome();
+  }
+  function openSheet(title, content, { wide = false } = {}) {
+    sheet.classList.toggle("wide", wide);
+    sheet.innerHTML = `<div class="sheet-inner">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-header"><h2 id="sheet-title">${escapeHtml(title)}</h2><button class="icon-button" data-sheet-close aria-label="\u9589\u3058\u308B">\xD7</button></div>
+    ${content}
+  </div>`;
+    if (!sheet.open) sheet.showModal();
+  }
+  function closeSheet() {
+    if (sheet.open) sheet.close();
+    sheet.innerHTML = "";
+  }
+  function renderInstall() {
+    app.innerHTML = `<section class="install-screen">
+    <div class="install-card">
+      <img class="install-icon" src="./kaishi-icon.png" alt="\u61D0\u7D19\u306E\u30A2\u30A4\u30B3\u30F3">
+      <h1>\u61D0\u7D19</h1>
+      <ol>
+        <li>Safari\u306E\u5171\u6709\u30DC\u30BF\u30F3\uFF08\u56DB\u89D2\u304B\u3089\u4E0A\u5411\u304D\u77E2\u5370\uFF09\u3092\u62BC\u3059</li>
+        <li>\u300C\u30DB\u30FC\u30E0\u753B\u9762\u306B\u8FFD\u52A0\u300D\u3092\u62BC\u3059</li>
+        <li>\u300CWeb\u30A2\u30D7\u30EA\u3068\u3057\u3066\u958B\u304F\u300D\u3092\u6709\u52B9\u306B\u3057\u3066\u3001\u53F3\u4E0A\u306E\u300C\u8FFD\u52A0\u300D\u3092\u62BC\u3059</li>
+      </ol>
+      <p class="install-note">\u539F\u7A3F\u306E\u4FDD\u5B58\u5834\u6240\u304C\u4E8C\u3064\u306B\u5206\u304B\u308C\u306A\u3044\u3088\u3046\u3001\u57F7\u7B46\u306F\u30DB\u30FC\u30E0\u753B\u9762\u306E\u61D0\u7D19\u3060\u3051\u3067\u884C\u3044\u307E\u3059\u3002\u3053\u306ESafari\u753B\u9762\u3067\u306F\u539F\u7A3F\u3092\u4F5C\u6210\u3057\u307E\u305B\u3093\u3002</p>
+    </div>
+  </section>`;
+  }
+  async function boot() {
+    await removeLegacyOfflineShell();
+    if (!isStandalone()) {
+      renderInstall();
+      return;
+    }
+    await initializeLibrary();
+    applyAppearance(await getSettings());
+    runtime.guard = new InstanceGuard({
+      beforeRelinquish: async () => {
+        await saveEditorNow({ quiet: true });
+        if (runtime.editor?.failedError) throw runtime.editor.failedError;
+      },
+      onTakenOver: () => renderTakenOver()
+    });
+    if (!runtime.guard.start()) {
+      renderInstanceConflict();
+      return;
+    }
+    await renderHome();
+  }
+  async function removeLegacyOfflineShell() {
+    try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith("kaishi-shell-")).map((key) => caches.delete(key)));
+      }
+    } catch {
+    }
+  }
+  function renderInstanceConflict() {
+    app.innerHTML = `<section class="install-screen"><div class="install-card">
+    <h1 style="letter-spacing:0">\u5225\u306E\u753B\u9762\u3067\u958B\u3044\u3066\u3044\u307E\u3059</h1>
+    <p>\u61D0\u7D19\u306F\u3001\u5225\u306E\u753B\u9762\u3067\u3059\u3067\u306B\u958B\u304B\u308C\u3066\u3044\u307E\u3059\u3002\u540C\u3058\u539F\u7A3F\u3092\u4E8C\u3064\u306E\u753B\u9762\u304B\u3089\u4FDD\u5B58\u3057\u306A\u3044\u3088\u3046\u505C\u6B62\u3057\u3066\u3044\u307E\u3059\u3002</p>
+    <div class="button-row"><button class="button primary" data-action="take-over">\u3053\u306E\u753B\u9762\u3067\u7D9A\u3051\u308B</button><button class="button" data-action="stay-closed">\u3053\u3053\u3067\u306F\u958B\u304B\u306A\u3044</button></div>
+  </div></section>`;
+  }
+  function renderTakenOver() {
+    clearEditorTimers();
+    app.innerHTML = `<section class="install-screen"><div class="install-card">
+    <h1 style="letter-spacing:0">\u5225\u306E\u753B\u9762\u3078\u5207\u308A\u66FF\u308F\u308A\u307E\u3057\u305F</h1>
+    <p>\u3053\u306E\u753B\u9762\u3067\u306E\u7DE8\u96C6\u3092\u505C\u6B62\u3057\u307E\u3057\u305F\u3002\u5148\u307B\u3069\u9078\u3093\u3060\u61D0\u7D19\u3067\u7D9A\u3051\u3066\u304F\u3060\u3055\u3044\u3002</p>
+  </div></section>`;
+  }
+  async function renderHome() {
+    const snapshot = await getHomeSnapshot();
+    const reminder = await shouldRemindBackup(snapshot.settings);
+    const folderMap = new Map(snapshot.folders.map((folder) => [folder.id, folder]));
+    const pathFor = (folderId) => {
+      const names = [];
+      let current = folderMap.get(folderId);
+      while (current) {
+        names.unshift(current.name);
+        current = current.parentId ? folderMap.get(current.parentId) : null;
+      }
+      return names.join(" \uFF1E ") || "\u30E1\u30E2";
+    };
+    app.innerHTML = `<section class="screen home-screen">
+    ${header({ brand: true, menu: "home-menu", extra: runtime.online ? "" : '<span class="offline-badge">\u30AA\u30D5\u30E9\u30A4\u30F3</span>' })}
+    ${runtime.updateReady ? `<div class="notice compact"><span>\u65B0\u3057\u3044\u7248\u306E\u61D0\u7D19\u3092\u4F7F\u3048\u307E\u3059</span><button class="small-button" data-action="apply-update">\u66F4\u65B0\u3059\u308B</button><button class="small-button" data-action="dismiss-update">\u3042\u3068\u3067</button></div>` : ""}
+    ${reminder ? `<div class="notice compact"><span>\u305D\u308D\u305D\u308D\u66F8\u5EAB\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u308A\u307E\u3059\u304B\uFF1F</span><button class="small-button" data-action="backup-library">\u4ECA\u3064\u304F\u308B</button><button class="small-button" data-action="dismiss-backup">\u4ECA\u65E5\u306F\u9589\u3058\u308B</button></div>` : ""}
+
+    <div class="section-title-row"><h2 class="section-title">\u4ED8\u7B8B</h2>${snapshot.stickies.length > 1 ? '<button class="small-button" data-action="reorder-stickies">\u4E26\u3079\u66FF\u3048</button>' : ""}<button class="small-button" data-action="new-sticky">\uFF0B \u8FFD\u52A0</button></div>
+    ${snapshot.stickies.length ? `<div class="sticky-strip">${snapshot.stickies.map((sticky) => `<button class="sticky-card" style="background:${colorValue(sticky.color)}" data-action="edit-sticky" data-id="${sticky.id}">${escapeHtml(sticky.text)}<time>${formatShortDate(sticky.updatedAt)}</time></button>`).join("")}</div>` : '<div class="empty">\u4ED8\u7B8B\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
+
+    <div class="section-title-row"><h2 class="section-title">\u6700\u8FD1\u306E\u539F\u7A3F</h2></div>
+    ${snapshot.recent.length ? `<div class="list">${snapshot.recent.map((doc) => documentRow(doc, `${pathFor(doc.folderId)} \u30FB ${formatShortDate(doc.updatedAt)}`)).join("")}</div>` : '<div class="empty">\u6700\u8FD1\u306E\u539F\u7A3F\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
+
+    <div class="section-title-row"><h2 class="section-title">\u30D5\u30A9\u30EB\u30C0</h2><button class="small-button" data-action="new-folder" data-parent-id="">\uFF0B \u4F5C\u6210</button></div>
+    <div class="list">${snapshot.roots.map((folder) => folderRow(folder, `${snapshot.counts.get(folder.id) ?? 0}\u4EF6`)).join("")}</div>
+    <button class="fab" data-action="new-document" data-folder-id="${MEMO_FOLDER_ID}" aria-label="\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
+  </section>`;
+  }
+  function documentRow(doc, meta = "") {
+    return `<button class="row-button" data-action="open-document" data-id="${doc.id}">
+    <span class="color-bar" style="background:${colorValue(doc.color)}"></span>
+    <span class="row-main"><span class="row-title">${escapeHtml(doc.title)}</span><span class="row-meta">${escapeHtml(meta || `${countCharacters(doc.body)}\u5B57 \u30FB ${formatShortDate(doc.updatedAt)}`)}</span></span>
+    <span class="chevron">\u203A</span>
+  </button>`;
+  }
+  function folderRow(folder, meta = "") {
+    return `<button class="row-button" data-action="open-folder" data-id="${folder.id}">
+    <span class="folder-mark" style="--item-color:${colorValue(folder.color)}"></span>
+    <span class="row-main"><span class="row-title">${escapeHtml(folder.name)}</span>${meta ? `<span class="row-meta">${escapeHtml(meta)}</span>` : ""}</span>
+    <span class="chevron">\u203A</span>
+  </button>`;
+  }
+  async function renderFolder(folderId) {
+    const snapshot = await getFolderSnapshot(folderId);
+    const parentAction = snapshot.folder.parentId ? "folder-back-parent" : "go-home";
+    app.innerHTML = `<section class="screen folder-screen">
+    ${header({ title: snapshot.folder.name, back: parentAction, menu: "folder-menu" })}
+    <div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div>
+    ${snapshot.childFolders.length ? `<div class="list">${snapshot.childFolders.map((folder) => folderRow(folder)).join("")}</div>` : '<div class="empty">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u306F\u3042\u308A\u307E\u305B\u3093</div>'}
+    <div class="section-title-row"><h2 class="section-title">\u539F\u7A3F</h2></div>
+    ${snapshot.documents.length ? `<div class="list">${snapshot.documents.map((doc) => documentRow(doc)).join("")}</div>` : `<div class="empty">\u307E\u3060\u539F\u7A3F\u304C\u3042\u308A\u307E\u305B\u3093<br><button class="button primary" style="margin-top:12px" data-action="new-document" data-folder-id="${folderId}">\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F</button></div>`}
+    <button class="fab" data-action="new-document" data-folder-id="${folderId}" aria-label="\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306B\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
+  </section>`;
+  }
+  function currentEditorSnapshot() {
+    const textarea = document.querySelector("#editor");
+    return textarea ? { value: textarea.value, start: textarea.selectionStart, end: textarea.selectionEnd } : null;
+  }
+  function clearEditorTimers() {
+    stopEditorViewportSync();
+    stopEditorViewportSync = () => {
+    };
+    document.documentElement.style.removeProperty("--editor-viewport-height");
+    if (!runtime.editor) return;
+    clearTimeout(runtime.editor.saveTimer);
+    clearInterval(runtime.editor.historyTimer);
+    runtime.editor.saveTimer = null;
+    runtime.editor.historyTimer = null;
+  }
+  async function renderEditor(documentId) {
+    const doc = await getDocument(documentId);
+    if (!doc || doc.deletedAt) return setRoute({ name: "home" });
+    const previous = runtime.editor?.documentId === documentId ? runtime.editor : null;
+    runtime.editor = {
+      documentId,
+      document: doc,
+      composing: false,
+      saveTimer: null,
+      historyTimer: null,
+      lastSavedBody: doc.body,
+      lastHistoryBody: previous?.lastHistoryBody ?? doc.body,
+      failedError: null,
+      searchOpen: runtime.route.searchOpen ?? false,
+      searchIndex: 0,
+      searchMatches: [],
+      returnRoute: runtime.route.returnRoute ?? previous?.returnRoute ?? { name: "home" },
+      scrollRatio: runtime.route.scrollRatio ?? 0
+    };
+    if (!previous) undoManager.clear();
+    const toolbar = doc.type === "markdown" ? `${toolButton("undo", "\u21B6", "\u623B\u308B")}${toolButton("redo", "\u21B7", "\u9032\u3080")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${toolButton("undo", "\u21B6", "\u623B\u308B")}${toolButton("redo", "\u21B7", "\u9032\u3080")}`;
+    app.innerHTML = `<section class="screen editor-screen">
+    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button>' })}
+    <div id="save-error-slot"></div>
+    <div class="editor-wrap">
+      ${runtime.editor.searchOpen ? searchPanel() : ""}
+      <textarea id="editor" class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="\u672C\u6587" placeholder="\u3053\u3053\u306B\u66F8\u304D\u59CB\u3081\u307E\u3059\u3002">${escapeHtml(doc.body)}</textarea>
+      <div class="editor-toolbar" aria-label="\u7DE8\u96C6\u88DC\u52A9">${toolbar}</div>
+    </div>
+  </section>`;
+    bindEditor();
+  }
+  function toolButton(action, label, aria = label) {
+    return `<button class="tool-button" data-action="${action}" aria-label="${escapeHtml(aria)}">${escapeHtml(label)}</button>`;
+  }
+  function bindEditor() {
+    const textarea = document.querySelector("#editor");
+    if (!textarea || !runtime.editor) return;
+    textarea.addEventListener("compositionstart", () => {
+      runtime.editor.composing = true;
+    });
+    textarea.addEventListener("compositionend", () => {
+      runtime.editor.composing = false;
+      scheduleEditorSave();
+    });
+    textarea.addEventListener("beforeinput", () => {
+      if (!runtime.editor.composing) {
+        const snapshot = currentEditorSnapshot();
+        if (snapshot) undoManager.record(snapshot);
+      }
+    });
+    textarea.addEventListener("input", () => {
+      setSaveState("\u5165\u529B\u4E2D");
+      if (!runtime.editor.composing) scheduleEditorSave();
+    });
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        performUndo(event.shiftKey ? "redo" : "undo");
+      }
+    });
+    runtime.editor.historyTimer = setInterval(async () => {
+      await saveEditorNow({ quiet: true });
+      const current = await getDocument(runtime.editor.documentId);
+      if (current?.body !== runtime.editor.lastHistoryBody) {
+        await createHistory(current.id, "10\u5206\u3054\u3068\u306E\u5C65\u6B74");
+        runtime.editor.lastHistoryBody = current.body;
+      }
+    }, 10 * 60 * 1e3);
+    requestAnimationFrame(() => {
+      if (runtime.editor.scrollRatio > 0) textarea.scrollTop = runtime.editor.scrollRatio * Math.max(0, textarea.scrollHeight - textarea.clientHeight);
+      if (runtime.route.focus) textarea.focus();
+    });
+    if (runtime.editor.searchOpen) bindSearchPanel();
+    bindEditorViewport();
+    updateUndoButtons();
+  }
+  function bindEditorViewport() {
+    stopEditorViewportSync();
+    const viewport = window.visualViewport;
+    const updateHeight = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
+    };
+    viewport?.addEventListener("resize", updateHeight);
+    viewport?.addEventListener("scroll", updateHeight);
+    window.addEventListener("resize", updateHeight);
+    stopEditorViewportSync = () => {
+      viewport?.removeEventListener("resize", updateHeight);
+      viewport?.removeEventListener("scroll", updateHeight);
+      window.removeEventListener("resize", updateHeight);
+    };
+    updateHeight();
+  }
+  function scheduleEditorSave() {
+    if (!runtime.editor) return;
+    clearTimeout(runtime.editor.saveTimer);
+    runtime.editor.saveTimer = setTimeout(() => saveEditorNow(), 1e3);
+  }
+  function setSaveState(text) {
+    const element = document.querySelector(".save-state");
+    if (element) element.textContent = text;
+  }
+  async function saveEditorNow({ quiet = false } = {}) {
+    if (!runtime.editor) return null;
+    const textarea = document.querySelector("#editor");
+    if (!textarea || runtime.editor.composing) return runtime.editor.document;
+    clearTimeout(runtime.editor.saveTimer);
+    if (textarea.value === runtime.editor.lastSavedBody) return runtime.editor.document;
+    if (!quiet) setSaveState("\u4FDD\u5B58\u4E2D\u2026");
+    try {
+      const saved = await saveDocument(runtime.editor.documentId, { body: textarea.value });
+      runtime.editor.document = saved;
+      runtime.editor.lastSavedBody = saved.body;
+      runtime.editor.failedError = null;
+      document.querySelector("#save-error-slot")?.replaceChildren();
+      setSaveState("\u4FDD\u5B58\u6E08\u307F");
+      return saved;
+    } catch (error) {
+      runtime.editor.failedError = error;
+      showSaveFailure(error);
+      setSaveState("\u672A\u4FDD\u5B58");
+      return null;
+    }
+  }
+  function showSaveFailure(error) {
+    const slot = document.querySelector("#save-error-slot");
+    if (!slot) return;
+    const reason = error?.name === "QuotaExceededError" ? "iPhone\u306E\u7A7A\u304D\u5BB9\u91CF\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002" : error?.message || "\u539F\u56E0\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
+    slot.innerHTML = `<div class="notice danger"><strong>\u3053\u306E\u539F\u7A3F\u306F\u3001\u307E\u3060\u4FDD\u5B58\u3067\u304D\u3066\u3044\u307E\u305B\u3093</strong><br><small>${escapeHtml(reason)} \u5B89\u5168\u306A\u5834\u6240\u3078\u9000\u907F\u3059\u308B\u307E\u3067\u3001\u3053\u306E\u753B\u9762\u3092\u9589\u3058\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002</small><div class="button-row" style="margin-top:10px"><button class="button" data-action="retry-save">\u3082\u3046\u4E00\u5EA6\u4FDD\u5B58</button><button class="button" data-action="emergency-copy">\u672C\u6587\u3092\u30B3\u30D4\u30FC</button><button class="button" data-action="emergency-file">\u30D5\u30A1\u30A4\u30EB\u3068\u3057\u3066\u9000\u907F</button></div></div>`;
+  }
+  function updateUndoButtons() {
+    document.querySelector('[data-action="undo"]')?.toggleAttribute("disabled", !undoManager.canUndo);
+    document.querySelector('[data-action="redo"]')?.toggleAttribute("disabled", !undoManager.canRedo);
+  }
+  async function prepareToLeaveEditor() {
+    if (!runtime.editor) return true;
+    const saved = await saveEditorNow();
+    if (!saved && runtime.editor.failedError) {
+      showToast("\u307E\u3060\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u3053\u306E\u753B\u9762\u306B\u7559\u307E\u308A\u307E\u3059\u3002");
+      return false;
+    }
+    if (saved.body !== runtime.editor.lastHistoryBody) {
+      await createHistory(saved.id, "\u539F\u7A3F\u3092\u9589\u3058\u305F\u6642");
+      runtime.editor.lastHistoryBody = saved.body;
+    }
+    clearEditorTimers();
+    runtime.editor = null;
+    return true;
+  }
+  async function leaveEditor(targetRoute) {
+    if (!await prepareToLeaveEditor()) return false;
+    setRoute(targetRoute);
+    return true;
+  }
+  function applySnapshot(snapshot) {
+    const textarea = document.querySelector("#editor");
+    if (!textarea || !snapshot) return;
+    textarea.value = snapshot.value;
+    textarea.setSelectionRange(snapshot.start, snapshot.end);
+    textarea.focus();
+    setSaveState("\u5165\u529B\u4E2D");
+    scheduleEditorSave();
+    updateUndoButtons();
+  }
+  function performUndo(direction) {
+    const current = currentEditorSnapshot();
+    if (!current) return;
+    const target = direction === "undo" ? undoManager.undo(current) : undoManager.redo(current);
+    applySnapshot(target);
+  }
+  function replaceSelection(before, after = before, placeholder = "") {
+    const textarea = document.querySelector("#editor");
+    if (!textarea) return;
+    const snapshot = currentEditorSnapshot();
+    undoManager.record(snapshot);
+    const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || placeholder;
+    const replacement = `${before}${selected}${after}`;
+    const start = textarea.selectionStart;
+    textarea.setRangeText(replacement, textarea.selectionStart, textarea.selectionEnd, "end");
+    textarea.focus();
+    if (!snapshot.value.slice(snapshot.start, snapshot.end)) textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    updateUndoButtons();
+  }
+  function prefixSelectedLines(prefix) {
+    const textarea = document.querySelector("#editor");
+    if (!textarea) return;
+    const snapshot = currentEditorSnapshot();
+    undoManager.record(snapshot);
+    const lineStart = textarea.value.lastIndexOf("\n", textarea.selectionStart - 1) + 1;
+    const endBreak = textarea.value.indexOf("\n", textarea.selectionEnd);
+    const lineEnd = endBreak === -1 ? textarea.value.length : endBreak;
+    const selected = textarea.value.slice(lineStart, lineEnd);
+    const replacement = selected.split("\n").map((line) => `${prefix}${line}`).join("\n");
+    textarea.setRangeText(replacement, lineStart, lineEnd, "end");
+    textarea.focus();
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    updateUndoButtons();
+  }
+  function searchPanel() {
+    return `<div class="search-panel">
+    <div class="search-row"><input id="search-term" class="text-input" type="search" placeholder="\u63A2\u3059\u8A00\u8449" aria-label="\u63A2\u3059\u8A00\u8449"><span id="search-count" class="search-count">0\uFF0F0\u4EF6</span><button class="icon-button" data-action="close-search" aria-label="\u691C\u7D22\u3092\u9589\u3058\u308B">\xD7</button></div>
+    <div class="search-row"><button class="button" data-action="search-prev">\u524D\u3078</button><button class="button" data-action="search-next">\u6B21\u3078</button><button class="button" data-action="show-replace">\u7F6E\u63DB\u3092\u958B\u304F</button></div>
+    <div id="replace-row" hidden><div class="search-row"><input id="replace-term" class="text-input" placeholder="\u7F6E\u304D\u63DB\u3048\u5F8C\u306E\u8A00\u8449" aria-label="\u7F6E\u304D\u63DB\u3048\u5F8C\u306E\u8A00\u8449"></div><div class="search-row"><button class="button" data-action="replace-one">\u3053\u306E1\u4EF6\u3092\u7F6E\u63DB</button><button class="button" data-action="replace-all">\u3059\u3079\u3066\u7F6E\u63DB</button></div></div>
+  </div>`;
+  }
+  function bindSearchPanel() {
+    const input = document.querySelector("#search-term");
+    input?.addEventListener("input", () => updateSearchMatches(0));
+    setTimeout(() => input?.focus(), 0);
+  }
+  function updateSearchMatches(preferredIndex = null) {
+    const textarea = document.querySelector("#editor");
+    const term = document.querySelector("#search-term")?.value ?? "";
+    if (!textarea || !runtime.editor) return;
+    const matches = [];
+    if (term) {
+      let start = 0;
+      while (start <= textarea.value.length) {
+        const found = textarea.value.indexOf(term, start);
+        if (found < 0) break;
+        matches.push(found);
+        start = found + Math.max(1, term.length);
+      }
+    }
+    runtime.editor.searchMatches = matches;
+    if (preferredIndex !== null) runtime.editor.searchIndex = Math.min(Math.max(0, preferredIndex), Math.max(0, matches.length - 1));
+    if (runtime.editor.searchIndex >= matches.length) runtime.editor.searchIndex = 0;
+    const count = document.querySelector("#search-count");
+    if (count) count.textContent = matches.length ? `${runtime.editor.searchIndex + 1}\uFF0F${matches.length}\u4EF6` : "0\uFF0F0\u4EF6";
+    if (matches.length) {
+      const position = matches[runtime.editor.searchIndex];
+      textarea.focus();
+      textarea.setSelectionRange(position, position + term.length);
+    }
+  }
+  function moveSearch(direction) {
+    if (!runtime.editor?.searchMatches.length) return;
+    const length = runtime.editor.searchMatches.length;
+    runtime.editor.searchIndex = (runtime.editor.searchIndex + direction + length) % length;
+    updateSearchMatches(runtime.editor.searchIndex);
+  }
+  async function replaceCurrentMatch() {
+    const textarea = document.querySelector("#editor");
+    const term = document.querySelector("#search-term")?.value ?? "";
+    const replacement = document.querySelector("#replace-term")?.value ?? "";
+    if (!textarea || !term || !runtime.editor.searchMatches.length) return;
+    const position = runtime.editor.searchMatches[runtime.editor.searchIndex];
+    undoManager.record(currentEditorSnapshot());
+    textarea.setRangeText(replacement, position, position + term.length, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    updateSearchMatches(runtime.editor.searchIndex);
+  }
+  async function replaceAllMatches() {
+    const textarea = document.querySelector("#editor");
+    const term = document.querySelector("#search-term")?.value ?? "";
+    const replacement = document.querySelector("#replace-term")?.value ?? "";
+    const count = runtime.editor?.searchMatches.length ?? 0;
+    if (!textarea || !term || !count) return;
+    if (!confirm(`${count}\u304B\u6240\u3092\u7F6E\u304D\u63DB\u3048\u307E\u3059\u3002`)) return;
+    await saveEditorNow({ quiet: true });
+    await createHistory(runtime.editor.documentId, "\u5168\u7F6E\u63DB\u76F4\u524D");
+    undoManager.record(currentEditorSnapshot());
+    textarea.value = textarea.value.split(term).join(replacement);
+    textarea.setSelectionRange(0, 0);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    updateSearchMatches(0);
+    showToast(`${count}\u304B\u6240\u3092\u7F6E\u304D\u63DB\u3048\u307E\u3057\u305F\u3002`);
+  }
+  async function renderPreview(documentId) {
+    const doc = await getDocument(documentId);
+    if (!doc || doc.deletedAt) return setRoute({ name: "home" });
+    const content = doc.type === "markdown" ? renderMarkdown(doc.body) : `<div style="white-space:pre-wrap">${escapeHtml(doc.body)}</div>`;
+    app.innerHTML = `<section class="screen preview-screen">
+    ${header({ title: doc.title, back: "preview-back" })}
+    <article id="preview-content" class="preview-content">${content || '<p class="empty">\u672C\u6587\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</p>'}</article>
+    <button class="button primary preview-edit" data-action="preview-back">\u7DE8\u96C6\u306B\u623B\u308B</button>
+  </section>`;
+    requestAnimationFrame(() => {
+      const preview = document.querySelector("#preview-content");
+      if (preview && runtime.route.scrollRatio) preview.scrollTop = runtime.route.scrollRatio * Math.max(0, preview.scrollHeight - preview.clientHeight);
+    });
+  }
+  async function showHomeMenu() {
+    openSheet("\u61D0\u7D19\u306E\u30E1\u30CB\u30E5\u30FC", `<div class="sheet-list">
+    <button class="menu-button" data-action="choose-json">JSON\u3092\u8AAD\u307F\u8FBC\u3080<small>\u6587\u673A\u30FB\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304B\u3089\u53D7\u3051\u53D6\u308B</small></button>
+    <button class="menu-button" data-action="backup-library">\u66F8\u5EAB\u5168\u4F53\u3092\u66F8\u304D\u51FA\u3059<small>\u539F\u7A3F\u30FB\u30D5\u30A9\u30EB\u30C0\u30FB\u4ED8\u7B8B\u30FB\u30B4\u30DF\u7BB1\u3092\u307E\u3068\u3081\u308B</small></button>
+    <button class="menu-button" data-action="open-trash">\u30B4\u30DF\u7BB1</button>
+    <button class="menu-button" data-action="open-settings">\u8868\u793A\u8A2D\u5B9A</button>
+    <button class="menu-button" data-action="open-about">\u61D0\u7D19\u306B\u3064\u3044\u3066</button>
+  </div>`);
+  }
+  async function showFolderMenu() {
+    const { folder, childFolders, documents } = await getFolderSnapshot(runtime.route.folderId);
+    openSheet(folder.name, `<p class="row-meta">\u539F\u7A3F${documents.length}\u4EF6\u30FB\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0${childFolders.length}\u4EF6</p><div class="sheet-list">
+    ${folder.parentId ? "" : `<button class="menu-button" data-action="new-folder" data-parent-id="${folder.id}">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u308B</button>`}
+    <button class="menu-button" data-action="edit-folder" data-id="${folder.id}">${folder.system ? "\u8272\u3092\u5909\u66F4" : "\u540D\u524D\u30FB\u8272\u3092\u5909\u66F4"}</button>
+    <button class="menu-button" data-action="reorder-folder-items" data-id="${folder.id}">\u4E2D\u8EAB\u3092\u4E26\u3079\u66FF\u3048\u308B</button>
+    ${folder.system ? "" : `<button class="menu-button" data-action="move-folder" data-id="${folder.id}">\u30D5\u30A9\u30EB\u30C0\u3092\u79FB\u52D5</button>`}
+    <button class="menu-button" data-action="export-folder" data-id="${folder.id}">\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u66F8\u304D\u51FA\u3059<small>\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u3068\u539F\u7A3F\u3092\u542B\u3080JSON</small></button>
+    ${folder.system ? "" : `<button class="menu-button danger" data-action="trash-folder" data-id="${folder.id}">\u30B4\u30DF\u7BB1\u3078\u79FB\u3059</button>`}
+  </div>`);
+  }
+  async function showDocumentMenu() {
+    const saved = await saveEditorNow({ quiet: true });
+    if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u5148\u306B\u672C\u6587\u3092\u9000\u907F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    const document2 = await getDocument(runtime.editor.documentId);
+    openSheet(document2.title, `<p class="row-meta">${countCharacters(document2.body)}\u5B57 \u30FB ${escapeHtml(DOCUMENT_TYPES[document2.type])}</p><div class="sheet-list">
+    <button class="menu-button" data-action="open-preview">\u30D7\u30EC\u30D3\u30E5\u30FC<small>\u30AD\u30FC\u30DC\u30FC\u30C9\u306E\u51FA\u306A\u3044\u8AAD\u307F\u8FD4\u3057</small></button>
+    <button class="menu-button" data-action="open-search">\u691C\u7D22\u30FB\u7F6E\u63DB</button>
+    ${document2.type === "markdown" ? '<button class="menu-button" data-action="copy-note">note\u7528\u306B\u30B3\u30D4\u30FC</button>' : ""}
+    <button class="menu-button" data-action="copy-plain">\u672C\u6587\u3092\u30B3\u30D4\u30FC</button>
+    <button class="menu-button" data-action="export-document">\u66F8\u304D\u51FA\u3059\u30FB\u5171\u6709</button>
+    <button class="menu-button" data-action="open-history">\u5C65\u6B74</button>
+    <button class="menu-button" data-action="document-info">\u539F\u7A3F\u60C5\u5831</button>
+    <button class="menu-button" data-action="open-settings">\u8868\u793A\u8A2D\u5B9A</button>
+    <button class="menu-button danger" data-action="trash-document">\u30B4\u30DF\u7BB1\u3078\u79FB\u3059</button>
+  </div>`);
+  }
+  function showMarkdownMenu() {
+    openSheet("Markdown", `<div class="sheet-list">
+    <button class="menu-button" data-action="md-h1">\u5927\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B # \u3092\u4ED8\u3051\u308B</small></button>
+    <button class="menu-button" data-action="md-h2">\u4E2D\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B ## \u3092\u4ED8\u3051\u308B</small></button>
+    <button class="menu-button" data-action="md-h3">\u5C0F\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B ### \u3092\u4ED8\u3051\u308B</small></button>
+    <button class="menu-button" data-action="md-bold">\u592A\u5B57</button>
+    <button class="menu-button" data-action="md-italic">\u659C\u4F53</button>
+    <button class="menu-button" data-action="md-strike">\u6253\u3061\u6D88\u3057</button>
+    <button class="menu-button" data-action="md-quote">\u5F15\u7528</button>
+    <button class="menu-button" data-action="md-rule">\u533A\u5207\u308A\u7DDA</button>
+    <button class="menu-button" data-action="md-ruby">\u30EB\u30D3</button>
+  </div>`);
+  }
+  function stickyForm(sticky = {}) {
+    openSheet(sticky.id ? "\u4ED8\u7B8B\u3092\u7DE8\u96C6" : "\u4ED8\u7B8B\u3092\u8FFD\u52A0", `<form id="sticky-form">
+    <input type="hidden" name="id" value="${escapeHtml(sticky.id ?? "")}">
+    <label class="field"><span>\u5185\u5BB9</span><textarea class="text-area" name="text" required maxlength="500">${escapeHtml(sticky.text ?? "")}</textarea></label>
+    <div class="field"><span>\u8272</span>${colorChoices(sticky.color ?? "yellow")}</div>
+    <input type="hidden" name="color" value="${escapeHtml(sticky.color ?? "yellow")}">
+    <div class="button-row"><button class="button primary" type="submit">\u4FDD\u5B58</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+    ${sticky.id ? '<div class="danger-zone"><button class="button danger" type="button" data-action="delete-sticky">\u3053\u306E\u4ED8\u7B8B\u3092\u524A\u9664</button></div>' : ""}
+  </form>`);
+    bindColorChoices(sheet);
+    sheet.querySelector("#sticky-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      if (!String(data.get("text")).trim()) return;
+      await saveSticky({ id: data.get("id") || null, text: data.get("text"), color: data.get("color") });
+      closeSheet();
+      await renderHome();
+      showToast("\u4ED8\u7B8B\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002");
+    });
+  }
+  function bindColorChoices(root) {
+    root.querySelectorAll("[data-color-value]").forEach((button) => button.addEventListener("click", () => {
+      const name = button.dataset.colorName;
+      root.querySelectorAll(`[data-color-name="${name}"]`).forEach((item) => {
+        item.classList.toggle("selected", item === button);
+        item.setAttribute("aria-pressed", String(item === button));
+        item.innerHTML = `${item === button ? "\u2713" : ""}<span class="sr-only">${escapeHtml(item.dataset.colorLabel)}</span>`;
+      });
+      const input = root.querySelector(`[name="${name}"]`);
+      if (input) input.value = button.dataset.colorValue;
+    }));
+  }
+  async function folderForm(parentId, folder = {}) {
+    const place = parentId ? await getFolderPath(parentId) : "\u66F8\u5EAB\u306E\u76F4\u4E0B";
+    openSheet(folder.id ? "\u30D5\u30A9\u30EB\u30C0\u3092\u5909\u66F4" : "\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u308B", `<form id="folder-form">
+    <input type="hidden" name="id" value="${escapeHtml(folder.id ?? "")}"><input type="hidden" name="parentId" value="${escapeHtml(parentId ?? "")}">
+    <p class="row-meta">\u4F5C\u6210\u3059\u308B\u5834\u6240\uFF1A${escapeHtml(place)}</p>
+    ${folder.system ? "" : `<label class="field"><span>\u30D5\u30A9\u30EB\u30C0\u540D</span><input class="text-input" name="name" required maxlength="80" value="${escapeHtml(folder.name ?? "")}"></label>`}
+    <div class="field"><span>\u8272</span>${colorChoices(folder.color ?? "gray")}</div><input type="hidden" name="color" value="${escapeHtml(folder.color ?? "gray")}">
+    <div class="button-row"><button class="button primary" type="submit">${folder.id ? "\u5909\u66F4\u3092\u4FDD\u5B58" : "\u4F5C\u6210"}</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+  </form>`);
+    bindColorChoices(sheet);
+    sheet.querySelector("#folder-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const id = data.get("id");
+      if (id) await updateFolder(id, { name: data.get("name") || void 0, color: data.get("color") });
+      else await createFolder(data.get("parentId") || null, data.get("name"), data.get("color"));
+      closeSheet();
+      await renderRoute();
+      showToast(id ? "\u30D5\u30A9\u30EB\u30C0\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\u3002" : "\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u308A\u307E\u3057\u305F\u3002");
+    });
+  }
+  function showSimpleReorder(title, items, storeName, onDone = renderRoute) {
+    let order = [...items];
+    const draw = () => {
+      openSheet(title, `<div class="drag-list">${order.map((item, index) => `<div class="drag-item"><span class="row-main">${escapeHtml(item.text ?? item.title ?? item.name)}</span><button class="icon-button" data-reorder-index="${index}" data-direction="-1" aria-label="\u4E0A\u3078" ${index === 0 ? "disabled" : ""}>\u2191</button><button class="icon-button" data-reorder-index="${index}" data-direction="1" aria-label="\u4E0B\u3078" ${index === order.length - 1 ? "disabled" : ""}>\u2193</button></div>`).join("")}</div><div class="button-row" style="margin-top:14px"><button class="button primary" id="save-reorder">\u5B8C\u4E86</button><button class="button" data-sheet-close>\u3084\u3081\u308B</button></div>`);
+      sheet.querySelectorAll("[data-reorder-index]").forEach((button) => button.addEventListener("click", () => {
+        const index = Number(button.dataset.reorderIndex);
+        const target = index + Number(button.dataset.direction);
+        [order[index], order[target]] = [order[target], order[index]];
+        draw();
+      }));
+      sheet.querySelector("#save-reorder")?.addEventListener("click", async () => {
+        await reorderItems(storeName, order.map((item) => item.id));
+        closeSheet();
+        await onDone();
+        showToast("\u4E26\u3073\u9806\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002");
+      });
+    };
+    draw();
+  }
+  async function showFolderContentsReorder(folderId) {
+    const snapshot = await getFolderSnapshot(folderId);
+    openSheet("\u4E2D\u8EAB\u3092\u4E26\u3079\u66FF\u3048\u308B", `<div class="sheet-list"><button class="menu-button" id="reorder-child-folders">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u3092\u4E26\u3079\u66FF\u3048\u308B<small>${snapshot.childFolders.length}\u4EF6</small></button><button class="menu-button" id="reorder-documents">\u539F\u7A3F\u3092\u4E26\u3079\u66FF\u3048\u308B<small>${snapshot.documents.length}\u4EF6</small></button></div>`);
+    sheet.querySelector("#reorder-child-folders")?.addEventListener("click", () => showSimpleReorder("\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u306E\u4E26\u3079\u66FF\u3048", snapshot.childFolders, STORE_NAMES.folders));
+    sheet.querySelector("#reorder-documents")?.addEventListener("click", () => showSimpleReorder("\u539F\u7A3F\u306E\u4E26\u3079\u66FF\u3048", snapshot.documents, STORE_NAMES.documents));
+  }
+  async function showMovePicker(kind, id) {
+    const folders = await listFolders();
+    const item = kind === "document" ? await getDocument(id) : await getFolder(id);
+    const roots = folders.filter((folder) => folder.parentId === null);
+    const ordered = [];
+    roots.forEach((root) => {
+      ordered.push({ ...root, depth: 0 });
+      folders.filter((folder) => folder.parentId === root.id).forEach((child) => ordered.push({ ...child, depth: 1 }));
+    });
+    const options = kind === "folder" ? [{ id: "", name: "\u66F8\u5EAB\u306E\u76F4\u4E0B", depth: 0 }, ...roots.filter((folder) => folder.id !== id)] : ordered;
+    openSheet(kind === "document" ? "\u539F\u7A3F\u306E\u79FB\u52D5\u5148" : "\u30D5\u30A9\u30EB\u30C0\u306E\u79FB\u52D5\u5148", `<form id="move-form"><div class="list">${options.map((folder) => `<label class="row-button" style="padding-left:${12 + folder.depth * 22}px"><input type="radio" name="folderId" value="${folder.id}" ${String(item.folderId ?? item.parentId ?? "") === folder.id ? "checked" : ""}><span class="row-main" style="margin-left:10px"><span class="row-title">${escapeHtml(folder.name)}</span></span></label>`).join("")}</div><div class="button-row" style="margin-top:14px"><button class="button primary" type="submit">\u3053\u3053\u3078\u79FB\u52D5</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div></form>`);
+    sheet.querySelector("#move-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const target = new FormData(event.currentTarget).get("folderId");
+      if (kind === "document") await moveDocument(id, target || MEMO_FOLDER_ID);
+      else await moveFolder(id, target || null);
+      closeSheet();
+      if (kind === "document" && runtime.editor) {
+        runtime.editor.document = await getDocument(id);
+        showToast("\u539F\u7A3F\u3092\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002");
+      } else {
+        setRoute({ name: target ? "folder" : "home", folderId: target || void 0 });
+        showToast("\u30D5\u30A9\u30EB\u30C0\u3092\u79FB\u52D5\u3057\u307E\u3057\u305F\u3002");
+      }
+    });
+  }
+  async function showDocumentInfo() {
+    const document2 = await getDocument(runtime.editor.documentId);
+    const folders = await listFolders();
+    const roots = folders.filter((folder) => folder.parentId === null);
+    const ordered = [];
+    roots.forEach((root) => {
+      ordered.push({ ...root, depth: 0 });
+      folders.filter((folder) => folder.parentId === root.id).forEach((child) => ordered.push({ ...child, depth: 1 }));
+    });
+    openSheet("\u539F\u7A3F\u60C5\u5831", `<form id="document-info-form">
+    <label class="field"><span>\u30BF\u30A4\u30C8\u30EB</span><input class="text-input" name="title" maxlength="120" required value="${escapeHtml(document2.title)}"></label>
+    <div class="field"><span>\u8272</span>${colorChoices(document2.color)}</div><input type="hidden" name="color" value="${escapeHtml(document2.color)}">
+    <label class="field"><span>\u4FDD\u5B58\u5148</span><select class="select-input" name="folderId">${ordered.map((folder) => `<option value="${folder.id}" ${folder.id === document2.folderId ? "selected" : ""}>${"\u3000".repeat(folder.depth)}${escapeHtml(folder.name)}</option>`).join("")}</select></label>
+    <dl class="meta-grid"><dt>\u539F\u7A3F\u306E\u7A2E\u985E</dt><dd>${escapeHtml(DOCUMENT_TYPES[document2.type])}</dd><dt>\u4F5C\u6210\u65E5\u6642</dt><dd>${formatDateTime(document2.createdAt)}</dd><dt>\u6700\u7D42\u66F4\u65B0</dt><dd>${formatDateTime(document2.updatedAt)}</dd><dt>\u6587\u5B57\u6570</dt><dd>${countCharacters(document2.body)}\u5B57</dd></dl>
+    <div class="button-row" style="margin-top:14px"><button class="button primary" type="submit">\u5909\u66F4\u3092\u4FDD\u5B58</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+  </form>`);
+    bindColorChoices(sheet);
+    sheet.querySelector("#document-info-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const folderId = data.get("folderId");
+      let next = await saveDocument(document2.id, { title: data.get("title"), color: data.get("color") });
+      if (folderId !== document2.folderId) next = await moveDocument(document2.id, folderId);
+      runtime.editor.document = next;
+      closeSheet();
+      await renderEditor(document2.id);
+      showToast("\u539F\u7A3F\u60C5\u5831\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002");
+    });
+  }
+  async function showDocumentExport() {
+    const document2 = await getDocument(runtime.editor.documentId);
+    const defaultExtension = document2.type === "markdown" ? "md" : "txt";
+    openSheet("\u66F8\u304D\u51FA\u3059\u30FB\u5171\u6709", `<form id="export-document-form">
+    <label class="row-button"><input type="radio" name="kind" value="text" checked><span class="row-main" style="margin-left:10px"><span class="row-title">\u672C\u6587\u30D5\u30A1\u30A4\u30EB\u3068\u3057\u3066\u6E21\u3059</span><span class="row-meta">AirDrop\u3084\u300C\u30D5\u30A1\u30A4\u30EB\u300D\u3067\u666E\u901A\u306E\u6587\u7AE0\u3068\u3057\u3066\u958B\u304F</span></span></label>
+    <label class="row-button" style="margin-top:8px"><input type="radio" name="kind" value="json"><span class="row-main" style="margin-left:10px"><span class="row-title">\u6587\u673A\u3068\u5F80\u5FA9\u3059\u308BJSON</span><span class="row-meta">\u6240\u5C5E\u5148\u3068\u540C\u3058\u539F\u7A3F\u3092\u898B\u5206\u3051\u308B\u60C5\u5831\u3092\u542B\u3080</span></span></label>
+    <label class="field"><span>\u30D5\u30A1\u30A4\u30EB\u540D</span><input class="text-input" name="fileName" value="${escapeHtml(document2.title)}" required></label>
+    ${document2.type === "markdown" ? `<label class="field"><span>\u672C\u6587\u30D5\u30A1\u30A4\u30EB\u306E\u7A2E\u985E</span><select class="select-input" name="extension"><option value="md" selected>.md</option><option value="txt">.txt</option></select></label>` : `<input type="hidden" name="extension" value="${defaultExtension}">`}
+    <div class="button-row"><button class="button primary" type="submit">\u5171\u6709\u3059\u308B</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+  </form>`);
+    sheet.querySelector("#export-document-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const base = safeFileName(data.get("fileName"));
+      try {
+        if (data.get("kind") === "json") {
+          const payload = await buildExport("document", document2.id);
+          await shareFile(fileFromText(externalFileName("document", base), JSON.stringify(payload, null, 2), "application/json"), document2.title);
+        } else {
+          const extension = data.get("extension");
+          await shareFile(fileFromText(`${base}.${extension}`, document2.body), document2.title);
+        }
+        closeSheet();
+        showToast("\u5171\u6709\u306E\u6E96\u5099\u304C\u3067\u304D\u307E\u3057\u305F\u3002");
+      } catch (error) {
+        if (!error.cancelled) showErrorSheet("\u5171\u6709\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F", error, `<button class="button" data-action="copy-plain">\u672C\u6587\u3092\u30B3\u30D4\u30FC</button>`);
+      }
+    });
+  }
+  async function exportFolder(id) {
+    const folder = await getFolder(id);
+    const payload = await buildExport("folder", id);
+    await shareFile(fileFromText(externalFileName("folder", folder.name), JSON.stringify(payload, null, 2), "application/json"), folder.name);
+    showToast("\u30D5\u30A9\u30EB\u30C0JSON\u3092\u7528\u610F\u3057\u307E\u3057\u305F\u3002");
+  }
+  async function showLibraryBackup() {
+    const snapshot = await getHomeSnapshot();
+    const trash = await listTrash();
+    openSheet("\u66F8\u5EAB\u307E\u308B\u3054\u3068\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7", `<dl class="meta-grid"><dt>\u524D\u56DE</dt><dd>${formatDateTime(snapshot.settings.lastBackupAt)}</dd><dt>\u539F\u7A3F</dt><dd>${snapshot.documents.length}\u4EF6</dd><dt>\u30D5\u30A9\u30EB\u30C0</dt><dd>${snapshot.folders.length}\u4EF6</dd><dt>\u4ED8\u7B8B</dt><dd>${snapshot.stickies.length}\u4EF6</dd><dt>\u30B4\u30DF\u7BB1</dt><dd>${trash.length}\u4EF6</dd></dl><p class="row-meta">\u539F\u7A3F\u3054\u3068\u306E\u516820\u4E16\u4EE3\u5C65\u6B74\u306F\u542B\u307F\u307E\u305B\u3093\u3002</p><button class="button primary" id="create-library-backup" style="width:100%;margin-top:12px">\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30D5\u30A1\u30A4\u30EB\u3092\u4F5C\u308B</button>`);
+    sheet.querySelector("#create-library-backup")?.addEventListener("click", async () => {
+      try {
+        const payload = await buildExport("library");
+        await shareFile(fileFromText(externalFileName("library"), JSON.stringify(payload, null, 2), "application/json"), "\u61D0\u7D19\u306E\u66F8\u5EAB\u5168\u4F53");
+        await markBackupSuccess();
+        closeSheet();
+        showToast("\u66F8\u5EAB\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7528\u610F\u3057\u307E\u3057\u305F\u3002");
+        if (runtime.route.name === "home") await renderHome();
+      } catch (error) {
+        if (!error.cancelled) showErrorSheet("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F", error);
+      }
+    });
+  }
+  function showErrorSheet(title, error, extra = "") {
+    openSheet(title, `<div class="notice danger">${escapeHtml(error?.message || "\u539F\u56E0\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002")}</div>${extra}<button class="button" style="width:100%;margin-top:10px" data-sheet-close>\u9589\u3058\u308B</button>`);
+  }
+  async function showImportReview(inspection, fileName) {
+    runtime.importInspection = inspection;
+    runtime.importFileName = fileName;
+    const { payload, counts, conflicts, missingFolderIds, replacementLoss } = inspection;
+    const typeLabel = { document: "\u539F\u7A3F1\u672C", folder: "\u30D5\u30A9\u30EB\u30C0", library: "\u66F8\u5EAB\u5168\u4F53" }[payload.scope] ?? "\u53D7\u3051\u6E21\u3057\u30C7\u30FC\u30BF";
+    openSheet("\u8AAD\u307F\u8FBC\u3080\u5185\u5BB9\u306E\u78BA\u8A8D", `<dl class="meta-grid"><dt>\u30D5\u30A1\u30A4\u30EB</dt><dd>${escapeHtml(fileName)}</dd><dt>\u7A2E\u985E</dt><dd>${typeLabel}</dd><dt>\u66F8\u304D\u51FA\u3057\u65E5\u6642</dt><dd>${formatDateTime(payload.exportedAt)}</dd><dt>\u539F\u7A3F</dt><dd>${counts.documents}\u4EF6\uFF08\u65B0\u898F${counts.added}\u30FB\u540C\u3058\u539F\u7A3F${counts.updated}\uFF09</dd><dt>\u30D5\u30A9\u30EB\u30C0</dt><dd>${counts.folders}\u4EF6</dd><dt>\u4ED8\u7B8B</dt><dd>${counts.stickies}\u4EF6</dd></dl>
+    ${conflicts.length ? `<div class="notice warning">\u4E21\u65B9\u3067\u5909\u66F4\u3055\u308C\u305F\u539F\u7A3F\u304C${conflicts.length}\u4EF6\u3042\u308A\u307E\u3059\u3002\u6587\u7AE0\u3092\u5931\u308F\u306A\u3044\u3088\u3046\u4E00\u4EF6\u305A\u3064\u78BA\u8A8D\u3057\u307E\u3059\u3002</div>` : ""}
+    ${missingFolderIds.length ? `<div class="notice">\u4FDD\u5B58\u5148\u3092\u518D\u73FE\u3067\u304D\u306A\u3044\u539F\u7A3F\u306F\u300C\u30E1\u30E2\u300D\u3078\u5165\u308C\u3001\u5B8C\u4E86\u5F8C\u306B\u4EF6\u6570\u3092\u8868\u793A\u3057\u307E\u3059\u3002</div>` : ""}
+    ${payload.scope === "library" ? `<div class="field"><span>\u8AAD\u307F\u8FBC\u307F\u65B9</span><label class="row-button"><input type="radio" name="import-mode" value="merge" checked><span class="row-main" style="margin-left:10px"><span class="row-title">\u73FE\u5728\u306E\u66F8\u5EAB\u3078\u5408\u6D41\u3059\u308B\uFF08\u304A\u3059\u3059\u3081\uFF09</span></span></label><label class="row-button" style="margin-top:8px"><input type="radio" name="import-mode" value="replace"><span class="row-main" style="margin-left:10px"><span class="row-title">\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5185\u5BB9\u306B\u7F6E\u304D\u63DB\u3048\u308B</span><span class="row-meta">\u73FE\u5728\u3060\u3051\u306B\u3042\u308B\u539F\u7A3F${replacementLoss.documents}\u4EF6\u30FB\u30D5\u30A9\u30EB\u30C0${replacementLoss.folders}\u4EF6\u30FB\u4ED8\u7B8B${replacementLoss.stickies}\u4EF6\u30FB\u30B4\u30DF\u7BB1${replacementLoss.trash}\u4EF6\u304C\u66F8\u5EAB\u304B\u3089\u5916\u308C\u307E\u3059</span></span></label></div>` : ""}
+    <div class="button-row"><button class="button primary" id="start-import">\u8AAD\u307F\u8FBC\u3080</button><button class="button" data-sheet-close>\u3084\u3081\u308B</button></div>`);
+    sheet.querySelector("#start-import")?.addEventListener("click", async () => {
+      const mode = sheet.querySelector('[name="import-mode"]:checked')?.value ?? "merge";
+      if (mode === "replace") {
+        if (!confirm(`\u73FE\u5728\u3060\u3051\u306B\u3042\u308B\u539F\u7A3F${replacementLoss.documents}\u4EF6\u30FB\u30D5\u30A9\u30EB\u30C0${replacementLoss.folders}\u4EF6\u30FB\u4ED8\u7B8B${replacementLoss.stickies}\u4EF6\u30FB\u30B4\u30DF\u7BB1${replacementLoss.trash}\u4EF6\u304C\u66F8\u5EAB\u304B\u3089\u5916\u308C\u307E\u3059\u3002\u5148\u306B\u81EA\u52D5\u4FDD\u8B77\u3057\u3066\u7D9A\u3051\u307E\u3059\u304B\uFF1F`)) return;
+        if (!confirm("\u5FA9\u65E7\u7528\u306E\u7F6E\u304D\u63DB\u3048\u3092\u5B9F\u884C\u3057\u307E\u3059\u3002\u3042\u3068\u3067\u300C\u61D0\u7D19\u306B\u3064\u3044\u3066\u300D\u306E\u81EA\u52D5\u4FDD\u8B77\u8A18\u9332\u304B\u3089\u623B\u305B\u307E\u3059\u3002\u672C\u5F53\u306B\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F")) return;
+      }
+      runtime.importInspection.mode = mode;
+      runtime.conflictResolutions = {};
+      runtime.pendingConflictIndex = 0;
+      if (conflicts.length) showConflictReview();
+      else executeImport();
+    });
+  }
+  function showConflictReview() {
+    const conflicts = runtime.importInspection.conflicts;
+    const index = runtime.pendingConflictIndex;
+    const conflict = conflicts[index];
+    if (!conflict) return executeImport();
+    openSheet("\u540C\u3058\u539F\u7A3F\u304C\u4E21\u65B9\u3067\u5909\u66F4\u3055\u308C\u3066\u3044\u307E\u3059", `<p class="row-meta">${index + 1}\uFF0F${conflicts.length}\u4EF6</p>
+    <div class="notice"><strong>iPhone\u306B\u3042\u308B\u539F\u7A3F</strong><br>${formatDateTime(conflict.local.updatedAt)}\u30FB${countCharacters(conflict.local.body)}\u5B57<p>${escapeHtml(conflict.local.body.slice(0, 120) || "\u672C\u6587\u306A\u3057")}</p></div>
+    <div class="notice"><strong>\u8AAD\u307F\u8FBC\u3080\u539F\u7A3F</strong><br>${formatDateTime(conflict.incoming.updatedAt)}\u30FB${countCharacters(conflict.incoming.body)}\u5B57<p>${escapeHtml(conflict.incoming.body.slice(0, 120) || "\u672C\u6587\u306A\u3057")}</p></div>
+    <div class="sheet-list"><button class="menu-button" data-action="resolve-conflict" data-resolution="both">\u4E21\u65B9\u6B8B\u3059\uFF08\u304A\u3059\u3059\u3081\uFF09</button><button class="menu-button" data-action="resolve-conflict" data-resolution="local">iPhone\u5074\u3092\u6B8B\u3059</button><button class="menu-button danger" data-action="resolve-conflict" data-resolution="incoming">\u8AAD\u307F\u8FBC\u307F\u5074\u3067\u4E0A\u66F8\u304D</button>${conflicts.length - index > 1 ? '<button class="menu-button" data-action="resolve-all-both">\u6B8B\u308A\u3082\u3059\u3079\u3066\u4E21\u65B9\u6B8B\u3059</button>' : ""}</div>`);
+  }
+  async function executeImport() {
+    try {
+      const report = await applyImport(runtime.importInspection.payload, {
+        mode: runtime.importInspection.mode ?? "merge",
+        resolutions: runtime.conflictResolutions
+      });
+      openSheet("\u8AAD\u307F\u8FBC\u307F\u304C\u5B8C\u4E86\u3057\u307E\u3057\u305F", `<dl class="meta-grid"><dt>\u8FFD\u52A0</dt><dd>${report.added}\u4EF6</dd><dt>\u66F4\u65B0</dt><dd>${report.updated}\u4EF6</dd><dt>\u4E21\u65B9\u6B8B\u3057\u305F\u539F\u7A3F</dt><dd>${report.duplicated}\u4EF6</dd><dt>\u8AAD\u307F\u8FBC\u307E\u306A\u304B\u3063\u305F\u539F\u7A3F</dt><dd>${report.skipped}\u4EF6</dd></dl><button class="button primary" style="width:100%;margin-top:12px" data-action="finish-import">\u66F8\u5EAB\u3092\u898B\u308B</button>`);
+    } catch (error) {
+      showErrorSheet("\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F", error);
+    }
+  }
+  async function renderTrash() {
+    const items = await listTrash();
+    const folders = await listFolders({ includeDeleted: true });
+    app.innerHTML = `<section class="screen trash-screen">
+    ${header({ title: "\u30B4\u30DF\u7BB1", back: "go-home", menu: items.length ? "trash-menu" : null })}
+    ${items.length ? `<div class="list">${items.map((item) => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - new Date(item.deletedAt).getTime()) / 864e5));
+      const remaining = Math.max(0, TRASH_DAYS - elapsed);
+      const originalFolder = item.kind === "document" ? folders.find((folder) => folder.id === item.originalFolderId) : folders.find((folder) => folder.id === item.originalParentId);
+      return `<button class="row-button" data-action="trash-item" data-kind="${item.kind}" data-id="${item.id}"><span class="row-main"><span class="row-title">${escapeHtml(item.title ?? item.name)}</span><span class="row-meta">\u5143\u306E\u5834\u6240\uFF1A${escapeHtml(originalFolder?.name ?? (item.kind === "folder" ? "\u66F8\u5EAB\u306E\u76F4\u4E0B" : "\u5834\u6240\u4E0D\u660E"))} \u30FB \u3042\u3068${remaining}\u65E5</span></span><span class="chevron">\u203A</span></button>`;
+    }).join("")}</div>` : '<div class="empty">\u30B4\u30DF\u7BB1\u306F\u7A7A\u3067\u3059</div>'}
+  </section>`;
+  }
+  async function showTrashItem(kind, id) {
+    const item = kind === "document" ? await getDocument(id) : await getFolder(id);
+    if (!item) return;
+    const originalFolder = kind === "document" ? await getFolder(item.originalFolderId) : null;
+    const restoreButtons = originalFolder?.deletedAt ? `<button class="menu-button" data-action="restore-trash" data-kind="${kind}" data-id="${id}" data-restore-folder="true">\u5143\u306E\u30D5\u30A9\u30EB\u30C0\u3082\u4E00\u7DD2\u306B\u623B\u3059</button><button class="menu-button" data-action="restore-trash" data-kind="${kind}" data-id="${id}" data-restore-folder="false">\u539F\u7A3F\u3060\u3051\u300C\u30E1\u30E2\u300D\u3078\u623B\u3059</button>` : `<button class="menu-button" data-action="restore-trash" data-kind="${kind}" data-id="${id}" data-restore-folder="true">\u5143\u306E\u5834\u6240\u3078\u623B\u3059</button>`;
+    openSheet(item.title ?? item.name, `${kind === "document" ? `<div class="notice" style="max-height:220px;overflow:auto;white-space:pre-wrap">${escapeHtml(item.body.slice(0, 1e3) || "\u672C\u6587\u306F\u3042\u308A\u307E\u305B\u3093")}</div>` : ""}<p class="row-meta">\u524A\u9664\u65E5\uFF1A${formatDateTime(item.deletedAt)}</p><div class="sheet-list">${restoreButtons}<button class="menu-button danger" data-action="delete-forever" data-kind="${kind}" data-id="${id}">\u5B8C\u5168\u306B\u524A\u9664\u3059\u308B</button></div>`);
+  }
+  async function showTrashMenu() {
+    const items = await listTrash();
+    openSheet("\u30B4\u30DF\u7BB1\u306E\u30E1\u30CB\u30E5\u30FC", `<div class="notice danger">${items.length}\u4EF6\u3092\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002\u3053\u306E\u64CD\u4F5C\u306F\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002</div><button class="button danger" style="width:100%" data-action="empty-trash">\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3059\u308B</button>`);
+  }
+  async function renderHistory(documentId) {
+    const [document2, histories] = await Promise.all([getDocument(documentId), listHistories(documentId)]);
+    if (!document2) return setRoute({ name: "home" });
+    app.innerHTML = `<section class="screen history-screen">
+    ${header({ title: "\u5C65\u6B74", subtitle: document2.title, back: "history-back" })}
+    ${histories.length ? `<div class="list">${histories.map((history) => `<button class="row-button" data-action="history-item" data-id="${history.id}"><span class="row-main"><span class="row-title">${formatDateTime(history.createdAt)}</span><span class="row-meta">${history.characterCount}\u5B57 \u30FB ${escapeHtml(history.body.slice(0, 42) || "\u672C\u6587\u306A\u3057")}</span></span><span class="chevron">\u203A</span></button>`).join("")}</div>` : '<div class="empty">\u5C65\u6B74\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
+  </section>`;
+  }
+  async function showHistoryItem(id) {
+    const histories = await listHistories(runtime.route.documentId);
+    const history = histories.find((item) => item.id === id);
+    if (!history) return;
+    const content = history.type === "markdown" ? renderMarkdown(history.body) : `<div style="white-space:pre-wrap">${escapeHtml(history.body)}</div>`;
+    openSheet(formatDateTime(history.createdAt), `<div class="preview-content" style="max-height:48dvh">${content || "<p>\u672C\u6587\u306F\u3042\u308A\u307E\u305B\u3093</p>"}</div><p class="row-meta">${history.characterCount}\u5B57</p><div class="button-row"><button class="button primary" data-action="restore-history" data-id="${id}">\u3053\u306E\u5185\u5BB9\u306B\u623B\u3059</button><button class="button" data-action="duplicate-history" data-id="${id}">\u5225\u306E\u539F\u7A3F\u3068\u3057\u3066\u6B8B\u3059</button></div><p class="row-meta">\u73FE\u5728\u306E\u5185\u5BB9\u3082\u5C65\u6B74\u3078\u6B8B\u308B\u305F\u3081\u3001\u3042\u3068\u304B\u3089\u623B\u305B\u307E\u3059\u3002</p>`);
+  }
+  async function renderSettings() {
+    const settings = await getSettings();
+    applyAppearance(settings);
+    const selected = (value, expected) => value === expected ? "selected" : "";
+    app.innerHTML = `<section class="screen settings-screen">
+    ${header({ title: "\u8868\u793A\u8A2D\u5B9A", back: runtime.route.returnRoute?.name === "editor" ? "settings-back-editor" : "go-home" })}
+    <div class="preview-content" style="max-height:180px;min-height:150px;overflow:hidden"><h2>\u96E8\u306E\u65E5\u306E\u539F\u7A3F</h2><p>\u7A93\u3092\u53E9\u304F\u96E8\u306E\u97F3\u3067\u76EE\u304C\u899A\u3081\u305F\u3002\u307E\u3060\u671D\u306B\u306F\u5C11\u3057\u65E9\u3044\u3002</p></div>
+    <div class="field"><span>\u6587\u5B57\u306E\u5927\u304D\u3055\uFF1A${settings.fontSize}px</span><div class="button-row"><button class="button" data-action="font-size-down">\u5C0F\u3055\u304F</button><button class="button" data-action="font-size-up">\u5927\u304D\u304F</button></div></div>
+    <div class="field"><span>\u884C\u306E\u9593\u9694</span><div class="segmented"><button class="${selected(settings.lineHeight, "compact")}" data-setting="lineHeight" data-value="compact">\u72ED\u3081</button><button class="${selected(settings.lineHeight, "standard")}" data-setting="lineHeight" data-value="standard">\u6A19\u6E96</button><button class="${selected(settings.lineHeight, "wide")}" data-setting="lineHeight" data-value="wide">\u5E83\u3081</button></div></div>
+    <div class="field"><span>\u5DE6\u53F3\u306E\u4F59\u767D</span><div class="segmented"><button class="${selected(settings.pageMargin, "compact")}" data-setting="pageMargin" data-value="compact">\u72ED\u3081</button><button class="${selected(settings.pageMargin, "standard")}" data-setting="pageMargin" data-value="standard">\u6A19\u6E96</button><button class="${selected(settings.pageMargin, "wide")}" data-setting="pageMargin" data-value="wide">\u5E83\u3081</button></div></div>
+    <div class="field"><span>\u66F8\u4F53</span><div class="segmented" style="grid-template-columns:1fr 1fr"><button class="${selected(settings.fontFamily, "mincho")}" data-setting="fontFamily" data-value="mincho">\u660E\u671D\u4F53</button><button class="${selected(settings.fontFamily, "gothic")}" data-setting="fontFamily" data-value="gothic">\u30B4\u30B7\u30C3\u30AF\u4F53</button></div></div>
+    <div class="field"><span>\u753B\u9762\u306E\u660E\u308B\u3055</span><div class="segmented"><button class="${selected(settings.theme, "system")}" data-setting="theme" data-value="system">iPhone\u306B\u5408\u308F\u305B\u308B</button><button class="${selected(settings.theme, "light")}" data-setting="theme" data-value="light">\u660E\u308B\u3044</button><button class="${selected(settings.theme, "dark")}" data-setting="theme" data-value="dark">\u6697\u3044</button></div></div>
+    <div class="button-row" style="margin-top:18px"><button class="button primary" data-action="settings-done">\u5B8C\u4E86</button><button class="button" data-action="reset-settings">\u521D\u671F\u8A2D\u5B9A\u306B\u623B\u3059</button></div>
+  </section>`;
+  }
+  async function renderAbout() {
+    const [settings, storage, backups] = await Promise.all([getSettings(), estimateStorage(), listInternalBackups()]);
+    const size = storage.usage ? `${(storage.usage / 1024 / 1024).toFixed(1)}MB` : "\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093";
+    app.innerHTML = `<section class="screen about-screen">
+    ${header({ title: "\u61D0\u7D19\u306B\u3064\u3044\u3066", back: "go-home" })}
+    <div style="text-align:center"><img src="./kaishi-icon.png" width="92" height="92" style="border-radius:22px" alt=""><h2 class="brand" style="margin:12px 0 4px">\u61D0\u7D19</h2><p class="row-meta">\u30D0\u30FC\u30B8\u30E7\u30F3 ${APP_VERSION}</p></div>
+    <h2 class="section-title" style="margin-top:24px">\u30C7\u30FC\u30BF\u306B\u3064\u3044\u3066</h2>
+    <div class="notice"><p>\u539F\u7A3F\u306F\u3001\u3053\u306EiPhone\u306E\u30DB\u30FC\u30E0\u753B\u9762\u7248\u306B\u4FDD\u5B58\u3055\u308C\u3066\u3044\u307E\u3059\u3002</p><p>GitHub\u3084\u5916\u90E8\u30B5\u30FC\u30D3\u30B9\u3078\u306F\u9001\u4FE1\u3057\u307E\u305B\u3093\u3002\u30B3\u30D4\u30FC\u30FB\u5171\u6709\u30FB\u66F8\u304D\u51FA\u3057\u3092\u5B9F\u884C\u3057\u305F\u6642\u3060\u3051\u5916\u3078\u6E21\u308A\u307E\u3059\u3002</p></div>
+    <dl class="meta-grid"><dt>\u4F7F\u7528\u5BB9\u91CF</dt><dd>${size}</dd><dt>\u524D\u56DE\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7</dt><dd>${formatDateTime(settings.lastBackupAt)}</dd><dt>\u30A2\u30D7\u30EA\u672C\u4F53</dt><dd>${APP_VERSION}</dd><dt>\u4FDD\u5B58\u30C7\u30FC\u30BF\u5F62\u5F0F</dt><dd>1\uFF08\u666E\u6BB5\u306F\u6C17\u306B\u3057\u306A\u304F\u3066\u5927\u4E08\u592B\u3067\u3059\uFF09</dd></dl>
+    <div class="button-row" style="margin-top:16px"><button class="button primary" data-action="backup-library">\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u308B</button><button class="button" data-action="open-recovery">\u81EA\u52D5\u4FDD\u8B77\u306E\u8A18\u9332\uFF08${backups.length}\uFF09</button></div>
+  </section>`;
+  }
+  async function showRecoveryRecords() {
+    const backups = await listInternalBackups();
+    openSheet("\u81EA\u52D5\u4FDD\u8B77\u306E\u8A18\u9332", backups.length ? `<p class="row-meta">JSON\u8AAD\u307F\u8FBC\u307F\u3084\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u306E\u76F4\u524D\u3092\u3001\u7AEF\u672B\u5185\u306B\u6700\u65B05\u4EF6\u307E\u3067\u6B8B\u3057\u3066\u3044\u307E\u3059\u3002</p><div class="list">${backups.map((backup) => `<button class="row-button" data-action="recovery-item" data-id="${backup.id}"><span class="row-main"><span class="row-title">${escapeHtml(backup.reason)}</span><span class="row-meta">${formatDateTime(backup.createdAt)}</span></span><span class="chevron">\u203A</span></button>`).join("")}</div>` : '<div class="empty">\u81EA\u52D5\u4FDD\u8B77\u306E\u8A18\u9332\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>');
+  }
+  async function showRecoveryItem(id) {
+    const backup = (await listInternalBackups()).find((item) => item.id === id);
+    if (!backup) return showToast("\u3053\u306E\u8A18\u9332\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    const data = backup.data ?? {};
+    openSheet("\u3053\u306E\u6642\u70B9\u3078\u623B\u3059", `<dl class="meta-grid"><dt>\u8A18\u9332</dt><dd>${escapeHtml(backup.reason)}</dd><dt>\u65E5\u6642</dt><dd>${formatDateTime(backup.createdAt)}</dd><dt>\u539F\u7A3F</dt><dd>${data.documents?.length ?? 0}\u4EF6</dd><dt>\u30D5\u30A9\u30EB\u30C0</dt><dd>${data.folders?.length ?? 0}\u4EF6</dd><dt>\u4ED8\u7B8B</dt><dd>${data.stickies?.length ?? 0}\u4EF6</dd></dl><div class="notice warning">\u73FE\u5728\u306E\u66F8\u5EAB\u3082\u5148\u306B\u81EA\u52D5\u4FDD\u8B77\u3057\u3066\u304B\u3089\u3001\u3053\u306E\u6642\u70B9\u3078\u623B\u3057\u307E\u3059\u3002</div><button class="button danger" style="width:100%" data-action="restore-recovery" data-id="${id}">\u3053\u306E\u6642\u70B9\u3078\u623B\u3059</button>`);
+  }
+  async function applySetting(name, value) {
+    const next = await saveSettings({ [name]: value });
+    applyAppearance(next);
+    await renderSettings();
+  }
+  async function copyForNote() {
+    const document2 = await getDocument(runtime.editor.documentId);
+    const html = renderMarkdown(document2.body);
+    const plain = markdownToPlainText(document2.body);
+    try {
+      await copyRichText(html, plain);
+      if (navigator.vibrate) navigator.vibrate(18);
+      closeSheet();
+      showToast("note\u7528\u306B\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002");
+    } catch (error) {
+      openSheet("\u66F8\u5F0F\u4ED8\u304D\u30B3\u30D4\u30FC\u304C\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F", `<div class="notice danger">${escapeHtml(error.message)}</div><div class="button-row"><button class="button primary" data-action="copy-note">\u3082\u3046\u4E00\u5EA6\u8A66\u3059</button><button class="button" data-action="copy-note-plain">\u66F8\u5F0F\u306A\u3057\u3067\u30B3\u30D4\u30FC</button></div>`);
+    }
+  }
+  async function handleAction(action, element) {
+    if (!action) return;
+    try {
+      if (action === "go-home") return runtime.editor ? leaveEditor({ name: "home" }) : setRoute({ name: "home" });
+      if (action === "home-menu") return showHomeMenu();
+      if (action === "open-folder") return setRoute({ name: "folder", folderId: element.dataset.id });
+      if (action === "folder-back-parent") {
+        const folder = await getFolder(runtime.route.folderId);
+        return setRoute(folder.parentId ? { name: "folder", folderId: folder.parentId } : { name: "home" });
+      }
+      if (action === "folder-menu") return showFolderMenu();
+      if (action === "new-folder") return folderForm(element.dataset.parentId || null);
+      if (action === "edit-folder") return folderForm((await getFolder(element.dataset.id)).parentId, await getFolder(element.dataset.id));
+      if (action === "move-folder") return showMovePicker("folder", element.dataset.id);
+      if (action === "reorder-folder-items") return showFolderContentsReorder(element.dataset.id);
+      if (action === "export-folder") {
+        closeSheet();
+        return exportFolder(element.dataset.id);
+      }
+      if (action === "trash-folder") {
+        const contents = await buildExport("folder", element.dataset.id);
+        const documentCount = contents.documents.filter((item) => !item.deletedAt).length;
+        const folderCount = Math.max(0, contents.folders.filter((item) => !item.deletedAt).length - 1);
+        if (confirm(`\u4E2D\u306E\u539F\u7A3F${documentCount}\u4EF6\u30FB\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0${folderCount}\u4EF6\u3082\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u307E\u3059\u3002`)) {
+          await moveToTrash("folder", element.dataset.id);
+          closeSheet();
+          setRoute({ name: "home" });
+          showToast("\u30D5\u30A9\u30EB\u30C0\u3092\u30B4\u30DF\u7BB1\u3078\u79FB\u3057\u307E\u3057\u305F\u3002");
+        }
+        return;
+      }
+      if (action === "open-document") return setRoute({ name: "editor", documentId: element.dataset.id, returnRoute: { ...runtime.route } });
+      if (action === "new-document") {
+        const doc = await createDocument(element.dataset.folderId || MEMO_FOLDER_ID);
+        return setRoute({ name: "editor", documentId: doc.id, returnRoute: { ...runtime.route }, focus: true });
+      }
+      if (action === "editor-new-document") {
+        const folderId = runtime.editor.document.folderId;
+        if (!await prepareToLeaveEditor()) return;
+        const doc = await createDocument(folderId);
+        return setRoute({ name: "editor", documentId: doc.id, returnRoute: { name: "folder", folderId }, focus: true });
+      }
+      if (action === "editor-back") return leaveEditor(runtime.editor.returnRoute || { name: "home" });
+      if (action === "document-menu") return showDocumentMenu();
+      if (action === "undo" || action === "redo") return performUndo(action);
+      if (action === "markdown-menu") return showMarkdownMenu();
+      if (action === "md-h1") {
+        closeSheet();
+        return prefixSelectedLines("# ");
+      }
+      if (action === "md-h2") {
+        closeSheet();
+        return prefixSelectedLines("## ");
+      }
+      if (action === "md-h3") {
+        closeSheet();
+        return prefixSelectedLines("### ");
+      }
+      if (action === "md-bold") {
+        closeSheet();
+        return replaceSelection("**", "**", "\u592A\u5B57");
+      }
+      if (action === "md-italic") {
+        closeSheet();
+        return replaceSelection("*", "*", "\u659C\u4F53");
+      }
+      if (action === "md-strike") {
+        closeSheet();
+        return replaceSelection("~~", "~~", "\u6253\u6D88\u3057");
+      }
+      if (action === "md-quote") {
+        closeSheet();
+        return prefixSelectedLines("> ");
+      }
+      if (action === "md-rule") {
+        closeSheet();
+        return replaceSelection("\n---\n", "", "");
+      }
+      if (action === "md-ruby") {
+        closeSheet();
+        return replaceSelection("{", "|\u3088\u307F}", "\u6F22\u5B57");
+      }
+      if (action === "retry-save") {
+        const result = await saveEditorNow();
+        if (result) showToast("\u4FDD\u5B58\u3067\u304D\u307E\u3057\u305F\u3002");
+        return;
+      }
+      if (action === "emergency-copy") return copyPlainText(document.querySelector("#editor")?.value ?? "").then(() => showToast("\u672C\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002"));
+      if (action === "emergency-file") {
+        const doc = runtime.editor.document;
+        return shareFile(fileFromText(`${safeFileName(doc.title)}.txt`, document.querySelector("#editor")?.value ?? ""), doc.title);
+      }
+      if (action === "open-preview") {
+        closeSheet();
+        const saved = await saveEditorNow({ quiet: true });
+        if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u30D7\u30EC\u30D3\u30E5\u30FC\u3078\u79FB\u308C\u307E\u305B\u3093\u3002");
+        const textarea = document.querySelector("#editor");
+        const ratio = textarea ? textarea.scrollTop / Math.max(1, textarea.scrollHeight - textarea.clientHeight) : 0;
+        return setRoute({ name: "preview", documentId: runtime.editor.documentId, scrollRatio: ratio, returnRoute: runtime.editor.returnRoute });
+      }
+      if (action === "preview-back") {
+        const preview = document.querySelector("#preview-content");
+        const ratio = preview ? preview.scrollTop / Math.max(1, preview.scrollHeight - preview.clientHeight) : 0;
+        return setRoute({ name: "editor", documentId: runtime.route.documentId, scrollRatio: ratio, returnRoute: runtime.route.returnRoute });
+      }
+      if (action === "open-search") {
+        closeSheet();
+        const saved = await saveEditorNow({ quiet: true });
+        if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u691C\u7D22\u3092\u958B\u3051\u307E\u305B\u3093\u3002");
+        runtime.route.searchOpen = true;
+        return renderEditor(runtime.editor.documentId);
+      }
+      if (action === "close-search") {
+        const saved = await saveEditorNow({ quiet: true });
+        if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u691C\u7D22\u3092\u9589\u3058\u307E\u305B\u3093\u3002");
+        runtime.route.searchOpen = false;
+        return renderEditor(runtime.editor.documentId);
+      }
+      if (action === "show-replace") {
+        document.querySelector("#replace-row").hidden = false;
+        document.querySelector("#replace-term")?.focus();
+        return;
+      }
+      if (action === "search-prev") return moveSearch(-1);
+      if (action === "search-next") return moveSearch(1);
+      if (action === "replace-one") return replaceCurrentMatch();
+      if (action === "replace-all") return replaceAllMatches();
+      if (action === "copy-note") return copyForNote();
+      if (action === "copy-note-plain") {
+        const doc = await getDocument(runtime.editor.documentId);
+        await copyPlainText(markdownToPlainText(doc.body));
+        closeSheet();
+        return showToast("\u66F8\u5F0F\u306A\u3057\u3067\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002");
+      }
+      if (action === "copy-plain") {
+        const doc = await getDocument(runtime.editor.documentId);
+        await copyPlainText(doc.body);
+        closeSheet();
+        return showToast("\u672C\u6587\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F\u3002");
+      }
+      if (action === "export-document") return showDocumentExport();
+      if (action === "document-info") return showDocumentInfo();
+      if (action === "trash-document") {
+        if (!confirm("\u3053\u306E\u539F\u7A3F\u3092\u30B4\u30DF\u7BB1\u3078\u79FB\u3057\u307E\u3059\u304B\uFF1F")) return;
+        const returnRoute = runtime.editor.returnRoute || { name: "home" };
+        const saved = await saveEditorNow({ quiet: true });
+        if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u30B4\u30DF\u7BB1\u3078\u79FB\u3057\u307E\u305B\u3093\u3002");
+        await moveToTrash("document", runtime.editor.documentId);
+        clearEditorTimers();
+        runtime.editor = null;
+        closeSheet();
+        setRoute(returnRoute);
+        return showToast("\u539F\u7A3F\u3092\u30B4\u30DF\u7BB1\u3078\u79FB\u3057\u307E\u3057\u305F\u3002");
+      }
+      if (action === "open-history") {
+        closeSheet();
+        const saved = await saveEditorNow({ quiet: true });
+        if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u5C65\u6B74\u3078\u79FB\u308C\u307E\u305B\u3093\u3002");
+        return setRoute({ name: "history", documentId: runtime.editor.documentId, returnRoute: runtime.editor.returnRoute });
+      }
+      if (action === "history-back") return setRoute({ name: "editor", documentId: runtime.route.documentId, returnRoute: runtime.route.returnRoute });
+      if (action === "history-item") return showHistoryItem(element.dataset.id);
+      if (action === "restore-history") {
+        if (!confirm("\u73FE\u5728\u306E\u5185\u5BB9\u3092\u5C65\u6B74\u3078\u6B8B\u3057\u3066\u3001\u3053\u306E\u5185\u5BB9\u306B\u623B\u3057\u307E\u3059\u304B\uFF1F")) return;
+        const doc = await restoreHistory(element.dataset.id);
+        closeSheet();
+        return setRoute({ name: "editor", documentId: doc.id, returnRoute: runtime.route.returnRoute });
+      }
+      if (action === "duplicate-history") {
+        await duplicateHistory(element.dataset.id);
+        closeSheet();
+        showToast("\u5225\u306E\u539F\u7A3F\u3068\u3057\u3066\u6B8B\u3057\u307E\u3057\u305F\u3002");
+        return;
+      }
+      if (action === "new-sticky") return stickyForm();
+      if (action === "edit-sticky") return stickyForm((await getHomeSnapshot()).stickies.find((item) => item.id === element.dataset.id));
+      if (action === "delete-sticky") {
+        const id = sheet.querySelector('[name="id"]')?.value;
+        if (confirm("\u3053\u306E\u4ED8\u7B8B\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) {
+          await deleteSticky(id);
+          closeSheet();
+          await renderHome();
+          showToast("\u4ED8\u7B8B\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
+        }
+        return;
+      }
+      if (action === "reorder-stickies") return showSimpleReorder("\u4ED8\u7B8B\u306E\u4E26\u3079\u66FF\u3048", (await getHomeSnapshot()).stickies, STORE_NAMES.stickies, renderHome);
+      if (action === "choose-json") {
+        closeSheet();
+        jsonInput.value = "";
+        jsonInput.click();
+        return;
+      }
+      if (action === "resolve-conflict") {
+        const conflict = runtime.importInspection.conflicts[runtime.pendingConflictIndex];
+        if (element.dataset.resolution === "incoming" && !confirm("iPhone\u5074\u306E\u73FE\u5728\u7A3F\u3092\u5C65\u6B74\u3078\u6B8B\u3057\u3066\u3001\u8AAD\u307F\u8FBC\u307F\u5074\u3067\u4E0A\u66F8\u304D\u3057\u307E\u3059\u304B\uFF1F")) return;
+        runtime.conflictResolutions[conflict.incoming.id] = element.dataset.resolution;
+        runtime.pendingConflictIndex += 1;
+        return showConflictReview();
+      }
+      if (action === "resolve-all-both") {
+        runtime.importInspection.conflicts.slice(runtime.pendingConflictIndex).forEach((conflict) => {
+          runtime.conflictResolutions[conflict.incoming.id] = "both";
+        });
+        runtime.pendingConflictIndex = runtime.importInspection.conflicts.length;
+        return executeImport();
+      }
+      if (action === "finish-import") {
+        closeSheet();
+        return setRoute({ name: "home" });
+      }
+      if (action === "backup-library") {
+        closeSheet();
+        return showLibraryBackup();
+      }
+      if (action === "dismiss-backup") {
+        await dismissBackupForToday();
+        return renderHome();
+      }
+      if (action === "open-trash") {
+        closeSheet();
+        return setRoute({ name: "trash" });
+      }
+      if (action === "trash-menu") return showTrashMenu();
+      if (action === "trash-item") return showTrashItem(element.dataset.kind, element.dataset.id);
+      if (action === "restore-trash") {
+        const result = await restoreFromTrash(element.dataset.kind, element.dataset.id, { restoreFolder: element.dataset.restoreFolder !== "false" });
+        closeSheet();
+        await renderTrash();
+        showToast(result?.fallbackToMemo ? "\u5143\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u623B\u3055\u305A\u3001\u539F\u7A3F\u3092\u300C\u30E1\u30E2\u300D\u3078\u623B\u3057\u307E\u3057\u305F\u3002" : "\u5143\u306E\u5834\u6240\u3078\u623B\u3057\u307E\u3057\u305F\u3002");
+        return;
+      }
+      if (action === "delete-forever") {
+        if (!confirm("\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002\u3053\u306E\u64CD\u4F5C\u306F\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002")) return;
+        if (!confirm("\u672C\u5F53\u306B\u5B8C\u5168\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+        await permanentlyDelete(element.dataset.kind, element.dataset.id);
+        closeSheet();
+        return renderTrash();
+      }
+      if (action === "empty-trash") {
+        if (!confirm("\u30B4\u30DF\u7BB1\u306E\u4E2D\u8EAB\u3092\u3059\u3079\u3066\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+        if (!confirm("\u3053\u306E\u64CD\u4F5C\u306F\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002\u672C\u5F53\u306B\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+        await emptyTrash();
+        closeSheet();
+        return renderTrash();
+      }
+      if (action === "open-settings") {
+        const returnRoute = runtime.editor ? { name: "editor", documentId: runtime.editor.documentId, returnRoute: runtime.editor.returnRoute } : { ...runtime.route };
+        if (runtime.editor) {
+          const saved = await saveEditorNow({ quiet: true });
+          if (!saved && runtime.editor.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u8A2D\u5B9A\u3078\u79FB\u308C\u307E\u305B\u3093\u3002");
+        }
+        closeSheet();
+        return setRoute({ name: "settings", returnRoute });
+      }
+      if (action === "settings-back-editor" || action === "settings-done") return setRoute(runtime.route.returnRoute || { name: "home" });
+      if (action === "font-size-down") return applySetting("fontSize", Math.max(14, (await getSettings()).fontSize - 1));
+      if (action === "font-size-up") return applySetting("fontSize", Math.min(26, (await getSettings()).fontSize + 1));
+      if (action === "reset-settings") {
+        await saveSettings({ fontSize: 17, lineHeight: "standard", pageMargin: "standard", fontFamily: "mincho", theme: "system" });
+        return renderSettings();
+      }
+      if (action === "open-about") {
+        closeSheet();
+        return setRoute({ name: "about" });
+      }
+      if (action === "open-recovery") return showRecoveryRecords();
+      if (action === "recovery-item") return showRecoveryItem(element.dataset.id);
+      if (action === "restore-recovery") {
+        if (!confirm("\u73FE\u5728\u306E\u66F8\u5EAB\u3092\u5148\u306B\u81EA\u52D5\u4FDD\u8B77\u3057\u3066\u304B\u3089\u3001\u3053\u306E\u8A18\u9332\u306E\u6642\u70B9\u3078\u623B\u3057\u307E\u3059\u304B\uFF1F")) return;
+        if (!confirm("\u66F8\u5EAB\u5168\u4F53\u304C\u5165\u308C\u66FF\u308F\u308A\u307E\u3059\u3002\u672C\u5F53\u306B\u623B\u3057\u307E\u3059\u304B\uFF1F")) return;
+        await restoreInternalBackup(element.dataset.id);
+        closeSheet();
+        setRoute({ name: "home" });
+        return showToast("\u81EA\u52D5\u4FDD\u8B77\u306E\u6642\u70B9\u3078\u623B\u3057\u307E\u3057\u305F\u3002");
+      }
+      if (action === "apply-update") {
+        if (runtime.editor) await saveEditorNow({ quiet: true });
+        runtime.updating = true;
+        runtime.updateRegistration?.waiting?.postMessage({ type: "SKIP_WAITING" });
+        return;
+      }
+      if (action === "dismiss-update") {
+        runtime.updateReady = false;
+        return renderHome();
+      }
+      if (action === "take-over") {
+        const result = await runtime.guard.requestTakeover();
+        if (result.blocked) return showToast("\u5148\u306B\u958B\u3044\u3066\u3044\u308B\u61D0\u7D19\u3092\u9589\u3058\u3066\u3001\u5C11\u3057\u5F85\u3063\u3066\u304B\u3089\u3082\u3046\u4E00\u5EA6\u62BC\u3057\u3066\u304F\u3060\u3055\u3044\u3002", 4200);
+        return renderHome();
+      }
+      if (action === "stay-closed") return renderTakenOver();
+      if (action === "reload-app") return location.reload();
+    } catch (error) {
+      showErrorSheet("\u64CD\u4F5C\u3092\u5B8C\u4E86\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F", error);
+    }
+  }
+  function handleFatal(error) {
+    console.error(error);
+    app.innerHTML = `<section class="install-screen"><div class="install-card"><h1 style="letter-spacing:0">\u61D0\u7D19\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F</h1><div class="notice danger">${escapeHtml(error?.message || "\u539F\u56E0\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002")}</div><button class="button" data-action="reload-app">\u3082\u3046\u4E00\u5EA6\u958B\u304F</button></div></section>`;
+  }
+  app.addEventListener("click", (event) => {
+    const element = event.target.closest("[data-action]");
+    if (element) handleAction(element.dataset.action, element);
+  });
+  sheet.addEventListener("click", (event) => {
+    const close = event.target.closest("[data-sheet-close]");
+    if (close) {
+      closeSheet();
+      return;
+    }
+    const element = event.target.closest("[data-action]");
+    if (element) handleAction(element.dataset.action, element);
+  });
+  sheet.addEventListener("click", (event) => {
+    if (event.target === sheet) closeSheet();
+  });
+  document.addEventListener("click", (event) => {
+    const setting = event.target.closest("[data-setting]");
+    if (setting) applySetting(setting.dataset.setting, setting.dataset.value);
+  });
+  jsonInput.addEventListener("change", async () => {
+    const file = jsonInput.files?.[0];
+    if (!file) return;
+    try {
+      const payload = await readJsonFile(file);
+      await showImportReview(await inspectImport(payload), file.name);
+    } catch (error) {
+      showErrorSheet("JSON\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F", error);
+    }
+  });
+  window.addEventListener("online", () => {
+    runtime.online = true;
+    if (runtime.route.name === "home") renderHome();
+  });
+  window.addEventListener("offline", () => {
+    runtime.online = false;
+    if (runtime.route.name === "home") renderHome();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveEditorNow({ quiet: true });
+  });
+  window.addEventListener("pagehide", () => {
+    saveEditorNow({ quiet: true });
+  });
+  window.addEventListener("beforeunload", (event) => {
+    if (runtime.editor?.failedError) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
+  boot().catch(handleFatal);
+})();
+
+  </script>
 </body>
 </html>
-
