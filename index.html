@@ -53,17 +53,16 @@
 }
 
 * { box-sizing: border-box; }
-html, body { min-height: 100%; margin: 0; overflow-x: hidden; background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
-body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; touch-action: manipulation; }
-body.editor-open { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
+body { position: fixed; inset: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; touch-action: manipulation; }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 a { color: var(--accent-strong); }
 [hidden] { display: none !important; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-#app { min-height: 100dvh; max-width: 720px; margin: 0 auto; background: var(--paper); }
-.screen { min-height: 100dvh; padding: env(safe-area-inset-top) 16px calc(92px + env(safe-area-inset-bottom)); }
+#app { width: 100%; height: 100%; max-width: 720px; margin: 0 auto; overflow: hidden; background: var(--paper); }
+.screen { width: 100%; height: 100dvh; min-height: 0; padding: env(safe-area-inset-top) 16px calc(92px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior-y: none; -webkit-overflow-scrolling: touch; }
 .screen.editor-screen, .screen.preview-screen { padding-bottom: env(safe-area-inset-bottom); }
 body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 
@@ -110,8 +109,8 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .list { display: grid; gap: 8px; }
 .home-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .home-folder-grid .row-button { min-width: 0; }
-.row-button { display: flex; align-items: center; width: 100%; min-height: 58px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; cursor: pointer; }
-.color-bar { align-self: stretch; flex: 0 0 5px; margin: -10px 11px -10px -12px; border-radius: 4px 0 0 4px; }
+.row-button { display: flex; align-items: center; width: 100%; min-height: 58px; padding: 10px 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; cursor: pointer; }
+.color-bar { align-self: stretch; flex: 0 0 7px; margin: -11px 11px -11px -13px; border-radius: 13px 0 0 13px; }
 .folder-mark { position: relative; flex: 0 0 24px; width: 24px; height: 17px; margin-right: 12px; border-radius: 4px; background: var(--item-color); }
 .folder-mark::before { content: ""; position: absolute; top: -5px; left: 3px; width: 11px; height: 7px; border-radius: 3px 3px 0 0; background: var(--item-color); }
 .row-main { flex: 1; min-width: 0; }
@@ -126,7 +125,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .sheet::backdrop { background: rgb(20 18 15 / 38%); backdrop-filter: blur(2px); }
 .sheet[open] { animation: sheet-in .18s ease-out; }
 @keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
-.sheet-inner { height: 100%; max-height: none; padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+.sheet-inner { height: 100%; max-height: none; padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: none; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .sheet-handle { width: 42px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--border); }
 .sheet-header { display: flex; align-items: center; gap: 10px; min-height: 52px; }
 .sheet-header h2 { flex: 1; margin: 0; font-size: 18px; }
@@ -147,14 +146,17 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: var(--editor-viewport-top, 0); left: 50%; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; transform: translateX(-50%); overflow: hidden; }
+.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; }
 .editor-screen .app-header { flex: 0 0 auto; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; }
-.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; }
+.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
 .tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
 .tool-button:disabled { opacity: .4; }
+.history-tool { display: grid; place-items: center; }
+.history-arrow { display: block; width: 34px; height: 24px; fill: currentColor; }
+.history-arrow.redo { transform: scaleX(-1); }
 
 .search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .search-row { display: flex; gap: 7px; margin-top: 7px; }
@@ -173,6 +175,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .preview-content blockquote { margin: 1em 0; padding: .1em 1em; border-left: 4px solid var(--accent); color: var(--muted); }
 .preview-content .blank-line { height: calc(var(--editor-font-size) * var(--editor-line-height)); }
 .preview-content ruby rt { font-size: .55em; }
+.plain-line { min-height: calc(var(--editor-font-size) * var(--editor-line-height)); white-space: pre-wrap; overflow-wrap: break-word; }
 .preview-header-edit { flex: 0 0 auto; white-space: nowrap; }
 
 .meta-grid { display: grid; grid-template-columns: minmax(100px, 38%) 1fr; border-top: 1px solid var(--border); }
@@ -213,7 +216,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.1.0";
+  var APP_VERSION = "2.1.1";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -1435,11 +1438,11 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       if (quoteOpen) output.push("</blockquote>");
       quoteOpen = false;
     };
-    for (const line of lines) {
+    for (const [lineIndex, line] of lines.entries()) {
       if (/^```/.test(line)) {
         closeList();
         closeQuote();
-        output.push(codeOpen ? "</code></pre>" : "<pre><code>");
+        output.push(codeOpen ? "</code></pre>" : `<pre data-source-line="${lineIndex}"><code>`);
         codeOpen = !codeOpen;
         continue;
       }
@@ -1451,7 +1454,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       if (!line.trim()) {
         closeList();
         closeQuote();
-        output.push('<div class="blank-line" aria-hidden="true"></div>');
+        output.push(`<div class="blank-line" data-source-line="${lineIndex}" aria-hidden="true"></div>`);
         continue;
       }
       const heading = line.match(/^(#{1,3})\s+(.+)$/);
@@ -1459,13 +1462,13 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         closeList();
         closeQuote();
         const level = heading[1].length;
-        output.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+        output.push(`<h${level} data-source-line="${lineIndex}">${renderInline(heading[2])}</h${level}>`);
         continue;
       }
       if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
         closeList();
         closeQuote();
-        output.push("<hr>");
+        output.push(`<hr data-source-line="${lineIndex}">`);
         continue;
       }
       const quote = line.match(/^>\s?(.*)$/);
@@ -1475,7 +1478,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
           output.push("<blockquote>");
           quoteOpen = true;
         }
-        output.push(`<p>${renderInline(quote[1])}</p>`);
+        output.push(`<p data-source-line="${lineIndex}">${renderInline(quote[1])}</p>`);
         continue;
       }
       closeQuote();
@@ -1488,11 +1491,11 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
           output.push(`<${nextType}>`);
           listType = nextType;
         }
-        output.push(`<li>${renderInline((ordered || unordered)[1])}</li>`);
+        output.push(`<li data-source-line="${lineIndex}">${renderInline((ordered || unordered)[1])}</li>`);
         continue;
       }
       closeList();
-      output.push(`<p>${renderInline(line)}</p>`);
+      output.push(`<p data-source-line="${lineIndex}">${renderInline(line)}</p>`);
     }
     closeList();
     closeQuote();
@@ -1622,6 +1625,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     return renderHome();
   }
   function openSheet(title, content, { wide = false } = {}) {
+    document.body.classList.add("sheet-open");
     sheet.classList.toggle("wide", wide);
     sheet.innerHTML = `<div class="sheet-inner">
     <div class="sheet-handle" aria-hidden="true"></div>
@@ -1637,23 +1641,21 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     };
     if (sheet.open) sheet.close();
     sheet.innerHTML = "";
+    document.body.classList.remove("sheet-open");
   }
   function bindSheetViewport() {
     stopSheetViewportSync();
     const viewport = window.visualViewport;
     const update = () => {
       const height = viewport?.height ?? window.innerHeight;
-      const top = viewport?.offsetTop ?? 0;
       const panelHeight = Math.min(760, Math.max(280, height * 0.86));
-      sheet.style.setProperty("--sheet-top", `${Math.round(top + height - panelHeight)}px`);
+      sheet.style.setProperty("--sheet-top", `${Math.round(Math.max(0, height - panelHeight))}px`);
       sheet.style.setProperty("--sheet-height", `${Math.round(panelHeight)}px`);
     };
     viewport?.addEventListener("resize", update);
-    viewport?.addEventListener("scroll", update);
     window.addEventListener("resize", update);
     stopSheetViewportSync = () => {
       viewport?.removeEventListener("resize", update);
-      viewport?.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
     update();
@@ -1808,10 +1810,10 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       searchIndex: 0,
       searchMatches: [],
       returnRoute: runtime.route.returnRoute ?? previous?.returnRoute ?? { name: "home" },
-      scrollRatio: runtime.route.scrollRatio ?? 0
+      scrollLine: runtime.route.scrollLine ?? 0
     };
     if (!previous) undoManager.clear();
-    const toolbar = doc.type === "markdown" ? `${toolButton("undo", "\u21B6", "\u623B\u308B")}${toolButton("redo", "\u21B7", "\u9032\u3080")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${toolButton("undo", "\u21B6", "\u623B\u308B")}${toolButton("redo", "\u21B7", "\u9032\u3080")}`;
+    const toolbar = doc.type === "markdown" ? `${historyToolButton("undo")}${historyToolButton("redo")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${historyToolButton("undo")}${historyToolButton("redo")}`;
     app.innerHTML = `<section class="screen editor-screen">
     ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button>' })}
     <div id="save-error-slot"></div>
@@ -1825,6 +1827,12 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
   }
   function toolButton(action, label, aria = label) {
     return `<button class="tool-button" data-action="${action}" aria-label="${escapeHtml(aria)}">${escapeHtml(label)}</button>`;
+  }
+  function historyToolButton(action) {
+    const isRedo = action === "redo";
+    return `<button class="tool-button history-tool" data-action="${action}" aria-label="${isRedo ? "\u9032\u3080" : "\u623B\u308B"}">
+    <svg class="history-arrow ${isRedo ? "redo" : "undo"}" viewBox="0 0 40 28" aria-hidden="true"><path d="M8 5v6.2C11.6 8.1 16.4 6.5 21.4 7c7.2.7 13 5.6 15 12.2l-5.5 1.7c-1.3-4.3-5.2-7.6-10.1-8-3.5-.4-6.9.7-9.5 3l5.8 5.3H2V5h6Z"/></svg>
+  </button>`;
   }
   function bindEditor() {
     const textarea = document.querySelector("#editor");
@@ -1858,9 +1866,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         performUndo(event.shiftKey ? "redo" : "undo");
       }
     });
-    const followCaret = () => setTimeout(() => scrollEditorCaretIntoView(textarea), 60);
-    textarea.addEventListener("focus", followCaret);
-    textarea.addEventListener("click", followCaret);
+    textarea.addEventListener("focus", () => setTimeout(() => scrollEditorCaretIntoView(textarea), 80), { once: true });
     document.querySelector(".editor-toolbar")?.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) event.preventDefault();
     });
@@ -1873,7 +1879,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       }
     }, 10 * 60 * 1e3);
     requestAnimationFrame(() => {
-      if (runtime.editor.scrollRatio > 0) textarea.scrollTop = runtime.editor.scrollRatio * Math.max(0, textarea.scrollHeight - textarea.clientHeight);
+      if (runtime.editor.scrollLine > 0) scrollEditorToSourceLine(textarea, runtime.editor.scrollLine);
       if (runtime.route.focus) textarea.focus();
     });
     if (runtime.editor.searchOpen) bindSearchPanel();
@@ -1887,19 +1893,15 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     const fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
     const updateHeight = () => {
       const height = viewport?.height ?? window.innerHeight;
-      const top = viewport?.offsetTop ?? 0;
       document.body.classList.toggle("keyboard-open", height < fullHeight - 100);
       if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
-      document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
       const textarea = document.querySelector("#editor");
       if (textarea && document.activeElement === textarea) requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
     };
     viewport?.addEventListener("resize", updateHeight);
-    viewport?.addEventListener("scroll", updateHeight);
     window.addEventListener("resize", updateHeight);
     stopEditorViewportSync = () => {
       viewport?.removeEventListener("resize", updateHeight);
-      viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
     };
     updateHeight();
@@ -1935,6 +1937,60 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     document.body.append(mirror);
     const target = marker.offsetTop - textarea.clientHeight * 0.45;
     textarea.scrollTop = Math.max(0, Math.min(target, textarea.scrollHeight - textarea.clientHeight));
+    mirror.remove();
+  }
+  function createEditorMirror(textarea) {
+    const style = getComputedStyle(textarea);
+    const mirror = document.createElement("div");
+    Object.assign(mirror.style, {
+      position: "fixed",
+      visibility: "hidden",
+      pointerEvents: "none",
+      left: "-9999px",
+      top: "0",
+      width: `${textarea.clientWidth}px`,
+      whiteSpace: "pre-wrap",
+      overflowWrap: "break-word",
+      wordBreak: "break-word",
+      boxSizing: "border-box",
+      padding: style.padding,
+      border: style.border,
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      fontStyle: style.fontStyle,
+      letterSpacing: style.letterSpacing,
+      lineHeight: style.lineHeight
+    });
+    textarea.value.split("\n").forEach((line, index) => {
+      const marker = document.createElement("span");
+      marker.dataset.sourceLine = String(index);
+      marker.textContent = line || "\u200B";
+      mirror.append(marker, document.createTextNode("\n"));
+    });
+    document.body.append(mirror);
+    return mirror;
+  }
+  function editorTopSourceLine(textarea) {
+    if (!textarea || textarea.clientHeight <= 0) return 0;
+    const mirror = createEditorMirror(textarea);
+    const target = textarea.scrollTop + parseFloat(getComputedStyle(textarea).paddingTop || "0");
+    let line = 0;
+    for (const marker of mirror.querySelectorAll("[data-source-line]")) {
+      if (marker.offsetTop > target + 2) break;
+      line = Number(marker.dataset.sourceLine);
+    }
+    mirror.remove();
+    return line;
+  }
+  function scrollEditorToSourceLine(textarea, line) {
+    if (!textarea || line <= 0) return;
+    const mirror = createEditorMirror(textarea);
+    const marker = mirror.querySelector(`[data-source-line="${Math.max(0, line)}"]`);
+    if (marker) {
+      const padding = parseFloat(getComputedStyle(textarea).paddingTop || "0");
+      textarea.scrollTop = Math.max(0, Math.min(marker.offsetTop - padding, textarea.scrollHeight - textarea.clientHeight));
+    }
     mirror.remove();
   }
   function scheduleEditorSave() {
@@ -2078,9 +2134,12 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (count) count.textContent = matches.length ? `${runtime.editor.searchIndex + 1}\uFF0F${matches.length}\u4EF6` : "0\uFF0F0\u4EF6";
     if (matches.length) {
       const position = matches[runtime.editor.searchIndex];
-      textarea.focus({ preventScroll: true });
       textarea.setSelectionRange(position, position + term.length);
-      requestAnimationFrame(() => scrollEditorCaretIntoView(textarea, position));
+      const searchInput = document.querySelector("#search-term");
+      requestAnimationFrame(() => {
+        scrollEditorCaretIntoView(textarea, position);
+        searchInput?.focus({ preventScroll: true });
+      });
     }
   }
   function moveSearch(direction) {
@@ -2119,15 +2178,43 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
   async function renderPreview(documentId) {
     const doc = await getDocument(documentId);
     if (!doc || doc.deletedAt) return setRoute({ name: "home" });
-    const content = doc.type === "markdown" ? renderMarkdown(doc.body) : `<div style="white-space:pre-wrap">${escapeHtml(doc.body)}</div>`;
+    const content = doc.type === "markdown" ? renderMarkdown(doc.body) : `<div class="plain-preview">${doc.body.replace(/\r\n?/g, "\n").split("\n").map((line, index) => `<div class="plain-line" data-source-line="${index}">${escapeHtml(line) || "&nbsp;"}</div>`).join("")}</div>`;
     app.innerHTML = `<section class="screen preview-screen">
     ${header({ title: doc.title, back: "preview-back", extra: '<button class="small-button preview-header-edit" data-action="preview-back">\u7DE8\u96C6\u306B\u623B\u308B</button>' })}
     <article id="preview-content" class="preview-content">${content || '<p class="empty">\u672C\u6587\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</p>'}</article>
   </section>`;
     requestAnimationFrame(() => {
       const preview = document.querySelector("#preview-content");
-      if (preview && runtime.route.scrollRatio) preview.scrollTop = runtime.route.scrollRatio * Math.max(0, preview.scrollHeight - preview.clientHeight);
+      if (preview && runtime.route.scrollLine) scrollPreviewToSourceLine(preview, runtime.route.scrollLine);
     });
+  }
+  function scrollPreviewToSourceLine(preview, line) {
+    const blocks = [...preview.querySelectorAll("[data-source-line]")];
+    if (!blocks.length || line <= 0) return;
+    let target = blocks[0];
+    for (const block of blocks) {
+      if (Number(block.dataset.sourceLine) > line) break;
+      target = block;
+    }
+    const padding = parseFloat(getComputedStyle(preview).paddingTop || "0");
+    const previewTop = preview.getBoundingClientRect().top;
+    const targetTop = target.getBoundingClientRect().top - previewTop + preview.scrollTop;
+    preview.dataset.targetTop = String(targetTop);
+    preview.scrollTop = Math.max(0, targetTop - padding);
+  }
+  function previewTopSourceLine(preview) {
+    if (!preview) return 0;
+    const blocks = [...preview.querySelectorAll("[data-source-line]")];
+    if (!blocks.length) return 0;
+    const previewTop = preview.getBoundingClientRect().top;
+    const target = preview.scrollTop + parseFloat(getComputedStyle(preview).paddingTop || "0") + 2;
+    let line = Number(blocks[0].dataset.sourceLine) || 0;
+    for (const block of blocks) {
+      const blockTop = block.getBoundingClientRect().top - previewTop + preview.scrollTop;
+      if (blockTop > target) break;
+      line = Number(block.dataset.sourceLine) || line;
+    }
+    return line;
   }
   async function showHomeMenu() {
     openSheet("\u61D0\u7D19\u306E\u30E1\u30CB\u30E5\u30FC", `<div class="sheet-list">
@@ -2598,13 +2685,13 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         const saved = await saveEditorNow({ quiet: true });
         if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u30D7\u30EC\u30D3\u30E5\u30FC\u3078\u79FB\u308C\u307E\u305B\u3093\u3002");
         const textarea = document.querySelector("#editor");
-        const ratio = textarea ? textarea.scrollTop / Math.max(1, textarea.scrollHeight - textarea.clientHeight) : 0;
-        return setRoute({ name: "preview", documentId: runtime.editor.documentId, scrollRatio: ratio, returnRoute: runtime.editor.returnRoute });
+        const scrollLine = textarea ? editorTopSourceLine(textarea) : 0;
+        return setRoute({ name: "preview", documentId: runtime.editor.documentId, scrollLine, returnRoute: runtime.editor.returnRoute });
       }
       if (action === "preview-back") {
         const preview = document.querySelector("#preview-content");
-        const ratio = preview ? preview.scrollTop / Math.max(1, preview.scrollHeight - preview.clientHeight) : 0;
-        return setRoute({ name: "editor", documentId: runtime.route.documentId, scrollRatio: ratio, returnRoute: runtime.route.returnRoute });
+        const scrollLine = previewTopSourceLine(preview);
+        return setRoute({ name: "editor", documentId: runtime.route.documentId, scrollLine, returnRoute: runtime.route.returnRoute });
       }
       if (action === "open-search") {
         closeSheet();
