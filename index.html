@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#F5F2EB">
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex, nofollow, noarchive">
@@ -53,10 +53,11 @@
 }
 
 * { box-sizing: border-box; }
-html, body { min-height: 100%; margin: 0; background: var(--paper); color: var(--ink); }
-body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+html, body { min-height: 100%; margin: 0; overflow-x: hidden; background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; touch-action: manipulation; }
+body.editor-open { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 button, input, textarea, select { font: inherit; color: inherit; }
-button { -webkit-tap-highlight-color: transparent; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 a { color: var(--accent-strong); }
 [hidden] { display: none !important; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -64,16 +65,19 @@ a { color: var(--accent-strong); }
 #app { min-height: 100dvh; max-width: 720px; margin: 0 auto; background: var(--paper); }
 .screen { min-height: 100dvh; padding: env(safe-area-inset-top) 16px calc(92px + env(safe-area-inset-bottom)); }
 .screen.editor-screen, .screen.preview-screen { padding-bottom: env(safe-area-inset-bottom); }
+body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 
 .app-header {
-  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
-  min-height: 68px; padding: 8px 0; background: color-mix(in srgb, var(--paper) 92%, transparent);
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: flex-start; gap: 8px;
+  height: 68px; min-height: 68px; padding: 8px 0; background: color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter: blur(14px);
 }
-.brand { margin: 0; font-family: var(--font-mincho); font-size: 24px; letter-spacing: .16em; }
-.header-title { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 16px; }
-.header-title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.save-state { margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.brand { flex: 1; margin: 7px 0 0; font-family: var(--font-mincho); font-size: 24px; letter-spacing: .16em; line-height: 32px; }
+.header-title { flex: 1; min-width: 0; height: 52px; margin: 0; padding-top: 3px; text-align: left; font-size: 16px; }
+.header-title-main, .save-state { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-title-main { height: 23px; line-height: 23px; }
+.save-state { min-height: 16px; margin-top: 1px; font-size: 11px; line-height: 16px; font-weight: 400; color: var(--muted); }
+.app-header > .icon-button, .app-header > .small-button { margin-top: 3px; }
 
 .icon-button, .round-button, .small-button, .button {
   border: 1px solid var(--border); background: var(--surface); cursor: pointer;
@@ -87,7 +91,7 @@ a { color: var(--accent-strong); }
 .button:disabled, .icon-button:disabled { opacity: .42; cursor: default; }
 .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .button-row > * { flex: 1 1 130px; }
-.section-title-row { display: flex; align-items: center; min-height: 46px; margin-top: 10px; }
+.section-title-row { display: flex; align-items: center; gap: 8px; min-height: 46px; margin-top: 10px; }
 .section-title { flex: 1; margin: 0; font-size: 14px; letter-spacing: .06em; }
 .small-button { min-height: 40px; padding: 8px 13px; border-radius: 20px; font-size: 13px; font-weight: 700; }
 
@@ -98,12 +102,14 @@ a { color: var(--accent-strong); }
 .notice.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); background: var(--danger-soft); }
 .offline-badge { padding: 5px 9px; border-radius: 9px; color: var(--muted); background: var(--paper-deep); font-size: 12px; }
 
-.sticky-strip { display: flex; gap: 10px; margin: 0 -16px; padding: 0 16px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+.sticky-strip { display: flex; gap: 10px; margin: 0; padding: 0 0 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
 .sticky-strip::-webkit-scrollbar { display: none; }
-.sticky-card { flex: 0 0 min(72vw, 260px); min-height: 94px; padding: 14px; border: 0; border-radius: 14px; color: #2c2924; text-align: left; scroll-snap-align: start; white-space: pre-wrap; box-shadow: 0 2px 7px rgb(44 41 36 / 8%); }
-.sticky-card time { display: block; margin-top: 10px; font-size: 11px; opacity: .62; }
+.sticky-card { flex: 0 0 min(66vw, 244px); min-height: 76px; padding: 12px 13px; border: 0; border-radius: 14px; color: #2c2924; text-align: left; scroll-snap-align: start; white-space: pre-wrap; box-shadow: 0 2px 7px rgb(44 41 36 / 8%); }
+.sticky-card time { display: block; margin-top: 7px; font-size: 11px; opacity: .62; }
 
 .list { display: grid; gap: 8px; }
+.home-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-folder-grid .row-button { min-width: 0; }
 .row-button { display: flex; align-items: center; width: 100%; min-height: 58px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; cursor: pointer; }
 .color-bar { align-self: stretch; flex: 0 0 5px; margin: -10px 11px -10px -12px; border-radius: 4px 0 0 4px; }
 .folder-mark { position: relative; flex: 0 0 24px; width: 24px; height: 17px; margin-right: 12px; border-radius: 4px; background: var(--item-color); }
@@ -116,11 +122,11 @@ a { color: var(--accent-strong); }
 
 .fab { position: fixed; right: max(20px, calc((100vw - 720px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 25; width: 62px; height: 62px; border: 0; border-radius: 50%; color: #fff; background: var(--accent); box-shadow: var(--shadow); font-size: 27px; }
 
-.sheet { width: min(100%, 720px); max-height: min(86dvh, 760px); margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; color: var(--ink); background: var(--paper); box-shadow: 0 -12px 42px rgb(0 0 0 / 20%); }
+.sheet { position: fixed; top: var(--sheet-top, 14dvh); right: 0; bottom: auto; left: 0; width: min(100%, 720px); height: var(--sheet-height, 86dvh); max-height: none; margin: 0 auto; padding: 0; border: 0; border-radius: 24px 24px 0 0; color: var(--ink); background: var(--paper); box-shadow: 0 -12px 42px rgb(0 0 0 / 20%); }
 .sheet::backdrop { background: rgb(20 18 15 / 38%); backdrop-filter: blur(2px); }
 .sheet[open] { animation: sheet-in .18s ease-out; }
 @keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
-.sheet-inner { max-height: min(86dvh, 760px); padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; }
+.sheet-inner { height: 100%; max-height: none; padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 .sheet-handle { width: 42px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--border); }
 .sheet-header { display: flex; align-items: center; gap: 10px; min-height: 52px; }
 .sheet-header h2 { flex: 1; margin: 0; font-size: 18px; }
@@ -141,32 +147,33 @@ a { color: var(--accent-strong); }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { display: flex; flex-direction: column; height: var(--editor-viewport-height, 100dvh); min-height: 0; }
+.editor-screen { position: fixed; top: var(--editor-viewport-top, 0); left: 50%; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; transform: translateX(-50%); overflow: hidden; }
 .editor-screen .app-header { flex: 0 0 auto; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; }
-.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; border: 1px solid var(--border); border-radius: 15px; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; }
-.editor:focus { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; }
 .editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
 .tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
 .tool-button:disabled { opacity: .4; }
 
-.search-panel { position: absolute; z-index: 12; top: 4px; right: 4px; left: 4px; padding: 9px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
+.search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .search-row { display: flex; gap: 7px; margin-top: 7px; }
 .search-row:first-child { margin-top: 0; }
+#replace-row { display: grid; gap: 8px; padding-top: 10px; }
+#replace-row .search-row { margin-top: 0; }
 .search-row .text-input { min-width: 0; }
 .search-count { display: grid; place-items: center; flex: 0 0 58px; color: var(--muted); font-size: 12px; }
 
 .preview-screen { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
-.preview-content { flex: 1; overflow-y: auto; padding: 18px var(--editor-margin) 80px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); }
-.preview-content p { margin: 0 0 .9em; }
+.preview-content { flex: 1; overflow-y: auto; padding: 18px var(--editor-margin) 40px; border: 0; border-radius: 0; background: var(--surface); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); }
+.preview-content p { margin: 0; }
 .preview-content h1 { font-size: 1.65em; }
 .preview-content h2 { font-size: 1.38em; }
 .preview-content h3 { font-size: 1.16em; }
 .preview-content blockquote { margin: 1em 0; padding: .1em 1em; border-left: 4px solid var(--accent); color: var(--muted); }
-.preview-content .blank-line { height: .85em; }
+.preview-content .blank-line { height: calc(var(--editor-font-size) * var(--editor-line-height)); }
 .preview-content ruby rt { font-size: .55em; }
-.preview-edit { position: fixed; right: max(20px, calc((100vw - 720px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 25; }
+.preview-header-edit { flex: 0 0 auto; white-space: nowrap; }
 
 .meta-grid { display: grid; grid-template-columns: minmax(100px, 38%) 1fr; border-top: 1px solid var(--border); }
 .meta-grid dt, .meta-grid dd { margin: 0; padding: 11px 4px; border-bottom: 1px solid var(--border); }
@@ -185,7 +192,6 @@ a { color: var(--accent-strong); }
 
 @media (max-width: 390px) {
   .screen { padding-right: 12px; padding-left: 12px; }
-  .sticky-strip { margin-right: -12px; margin-left: -12px; padding-right: 12px; padding-left: 12px; }
   .header-title { font-size: 14px; }
   .icon-button { flex-basis: 44px; width: 44px; height: 44px; }
 }
@@ -207,7 +213,7 @@ a { color: var(--accent-strong); }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.0.0";
+  var APP_VERSION = "2.1.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -540,7 +546,7 @@ a { color: var(--accent-strong); }
       getSettings()
     ]);
     const roots = sortByOrder(folders.filter((folder) => folder.parentId === null));
-    const recent = [...documents].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0, 5);
+    const recent = [...documents].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0, 3);
     const counts = /* @__PURE__ */ new Map();
     for (const folder of folders) {
       if (folder.parentId) counts.set(folder.parentId, (counts.get(folder.parentId) ?? 0) + 1);
@@ -1246,10 +1252,10 @@ a { color: var(--accent-strong); }
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
-  async function shareFile(file, title = "\u61D0\u7D19\u304B\u3089\u5171\u6709") {
+  async function shareFile(file) {
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
       try {
-        await navigator.share({ title, files: [file] });
+        await navigator.share({ files: [file] });
         return { method: "share" };
       } catch (error) {
         if (error?.name === "AbortError") {
@@ -1558,6 +1564,8 @@ a { color: var(--accent-strong); }
   var toastTimer;
   var stopEditorViewportSync = () => {
   };
+  var stopSheetViewportSync = () => {
+  };
   function isStandalone() {
     const local = ["localhost", "127.0.0.1"].includes(location.hostname);
     const dev = local && new URLSearchParams(location.search).get("dev") === "1";
@@ -1589,9 +1597,9 @@ a { color: var(--accent-strong); }
     root.style.setProperty("--editor-font", settings.fontFamily === "gothic" ? "var(--font-sans)" : "var(--font-mincho)");
   }
   function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false } = {}) {
-    return `<header class="app-header">
+    return `<header class="app-header ${back ? "has-back" : "no-back"} ${brand ? "brand-header" : ""}">
     ${back ? `<button class="icon-button" data-action="${back}" aria-label="\u623B\u308B">\u2190</button>` : ""}
-    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span>${escapeHtml(title)}</span>${subtitle ? `<span class="save-state">${escapeHtml(subtitle)}</span>` : ""}</h1>`}
+    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span class="header-title-main">${escapeHtml(title)}</span><span class="save-state">${escapeHtml(subtitle)}</span></h1>`}
     ${extra}
     ${menu ? `<button class="icon-button" data-action="${menu}" aria-label="\u30E1\u30CB\u30E5\u30FC">\u2026</button>` : ""}
   </header>`;
@@ -1621,10 +1629,34 @@ a { color: var(--accent-strong); }
     ${content}
   </div>`;
     if (!sheet.open) sheet.showModal();
+    bindSheetViewport();
   }
   function closeSheet() {
+    stopSheetViewportSync();
+    stopSheetViewportSync = () => {
+    };
     if (sheet.open) sheet.close();
     sheet.innerHTML = "";
+  }
+  function bindSheetViewport() {
+    stopSheetViewportSync();
+    const viewport = window.visualViewport;
+    const update = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      const top = viewport?.offsetTop ?? 0;
+      const panelHeight = Math.min(760, Math.max(280, height * 0.86));
+      sheet.style.setProperty("--sheet-top", `${Math.round(top + height - panelHeight)}px`);
+      sheet.style.setProperty("--sheet-height", `${Math.round(panelHeight)}px`);
+    };
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    stopSheetViewportSync = () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+    update();
   }
   function renderInstall() {
     app.innerHTML = `<section class="install-screen">
@@ -1713,7 +1745,7 @@ a { color: var(--accent-strong); }
     ${snapshot.recent.length ? `<div class="list">${snapshot.recent.map((doc) => documentRow(doc, `${pathFor(doc.folderId)} \u30FB ${formatShortDate(doc.updatedAt)}`)).join("")}</div>` : '<div class="empty">\u6700\u8FD1\u306E\u539F\u7A3F\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
 
     <div class="section-title-row"><h2 class="section-title">\u30D5\u30A9\u30EB\u30C0</h2><button class="small-button" data-action="new-folder" data-parent-id="">\uFF0B \u4F5C\u6210</button></div>
-    <div class="list">${snapshot.roots.map((folder) => folderRow(folder, `${snapshot.counts.get(folder.id) ?? 0}\u4EF6`)).join("")}</div>
+    <div class="list home-folder-grid">${snapshot.roots.map((folder) => folderRow(folder, `${snapshot.counts.get(folder.id) ?? 0}\u4EF6`)).join("")}</div>
     <button class="fab" data-action="new-document" data-folder-id="${MEMO_FOLDER_ID}" aria-label="\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
   </section>`;
   }
@@ -1736,8 +1768,7 @@ a { color: var(--accent-strong); }
     const parentAction = snapshot.folder.parentId ? "folder-back-parent" : "go-home";
     app.innerHTML = `<section class="screen folder-screen">
     ${header({ title: snapshot.folder.name, back: parentAction, menu: "folder-menu" })}
-    <div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div>
-    ${snapshot.childFolders.length ? `<div class="list">${snapshot.childFolders.map((folder) => folderRow(folder)).join("")}</div>` : '<div class="empty">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u306F\u3042\u308A\u307E\u305B\u3093</div>'}
+    ${snapshot.childFolders.length ? `<div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div><div class="list">${snapshot.childFolders.map((folder) => folderRow(folder)).join("")}</div>` : ""}
     <div class="section-title-row"><h2 class="section-title">\u539F\u7A3F</h2></div>
     ${snapshot.documents.length ? `<div class="list">${snapshot.documents.map((doc) => documentRow(doc)).join("")}</div>` : `<div class="empty">\u307E\u3060\u539F\u7A3F\u304C\u3042\u308A\u307E\u305B\u3093<br><button class="button primary" style="margin-top:12px" data-action="new-document" data-folder-id="${folderId}">\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F</button></div>`}
     <button class="fab" data-action="new-document" data-folder-id="${folderId}" aria-label="\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306B\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
@@ -1752,6 +1783,8 @@ a { color: var(--accent-strong); }
     stopEditorViewportSync = () => {
     };
     document.documentElement.style.removeProperty("--editor-viewport-height");
+    document.documentElement.style.removeProperty("--editor-viewport-top");
+    document.body.classList.remove("editor-open", "keyboard-open");
     if (!runtime.editor) return;
     clearTimeout(runtime.editor.saveTimer);
     clearInterval(runtime.editor.historyTimer);
@@ -1797,16 +1830,22 @@ a { color: var(--accent-strong); }
     const textarea = document.querySelector("#editor");
     if (!textarea || !runtime.editor) return;
     textarea.addEventListener("compositionstart", () => {
+      const snapshot = currentEditorSnapshot();
+      if (snapshot) undoManager.record(snapshot);
       runtime.editor.composing = true;
+      updateUndoButtons();
     });
     textarea.addEventListener("compositionend", () => {
       runtime.editor.composing = false;
       scheduleEditorSave();
+      updateUndoButtons();
+      requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
     });
     textarea.addEventListener("beforeinput", () => {
       if (!runtime.editor.composing) {
         const snapshot = currentEditorSnapshot();
         if (snapshot) undoManager.record(snapshot);
+        updateUndoButtons();
       }
     });
     textarea.addEventListener("input", () => {
@@ -1818,6 +1857,12 @@ a { color: var(--accent-strong); }
         event.preventDefault();
         performUndo(event.shiftKey ? "redo" : "undo");
       }
+    });
+    const followCaret = () => setTimeout(() => scrollEditorCaretIntoView(textarea), 60);
+    textarea.addEventListener("focus", followCaret);
+    textarea.addEventListener("click", followCaret);
+    document.querySelector(".editor-toolbar")?.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) event.preventDefault();
     });
     runtime.editor.historyTimer = setInterval(async () => {
       await saveEditorNow({ quiet: true });
@@ -1837,10 +1882,17 @@ a { color: var(--accent-strong); }
   }
   function bindEditorViewport() {
     stopEditorViewportSync();
+    document.body.classList.add("editor-open");
     const viewport = window.visualViewport;
+    const fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
     const updateHeight = () => {
       const height = viewport?.height ?? window.innerHeight;
+      const top = viewport?.offsetTop ?? 0;
+      document.body.classList.toggle("keyboard-open", height < fullHeight - 100);
       if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
+      document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
+      const textarea = document.querySelector("#editor");
+      if (textarea && document.activeElement === textarea) requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
     };
     viewport?.addEventListener("resize", updateHeight);
     viewport?.addEventListener("scroll", updateHeight);
@@ -1851,6 +1903,39 @@ a { color: var(--accent-strong); }
       window.removeEventListener("resize", updateHeight);
     };
     updateHeight();
+  }
+  function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
+    if (!textarea || textarea.clientHeight <= 0) return;
+    const style = getComputedStyle(textarea);
+    const mirror = document.createElement("div");
+    Object.assign(mirror.style, {
+      position: "fixed",
+      visibility: "hidden",
+      pointerEvents: "none",
+      left: "-9999px",
+      top: "0",
+      width: `${textarea.clientWidth}px`,
+      whiteSpace: "pre-wrap",
+      overflowWrap: "break-word",
+      wordBreak: "break-word",
+      boxSizing: "border-box",
+      padding: style.padding,
+      border: style.border,
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      fontStyle: style.fontStyle,
+      letterSpacing: style.letterSpacing,
+      lineHeight: style.lineHeight
+    });
+    mirror.textContent = textarea.value.slice(0, position);
+    const marker = document.createElement("span");
+    marker.textContent = textarea.value.slice(position, position + 1) || "\u200B";
+    mirror.append(marker);
+    document.body.append(mirror);
+    const target = marker.offsetTop - textarea.clientHeight * 0.45;
+    textarea.scrollTop = Math.max(0, Math.min(target, textarea.scrollHeight - textarea.clientHeight));
+    mirror.remove();
   }
   function scheduleEditorSave() {
     if (!runtime.editor) return;
@@ -1918,7 +2003,8 @@ a { color: var(--accent-strong); }
     if (!textarea || !snapshot) return;
     textarea.value = snapshot.value;
     textarea.setSelectionRange(snapshot.start, snapshot.end);
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
+    requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
     setSaveState("\u5165\u529B\u4E2D");
     scheduleEditorSave();
     updateUndoButtons();
@@ -1928,6 +2014,7 @@ a { color: var(--accent-strong); }
     if (!current) return;
     const target = direction === "undo" ? undoManager.undo(current) : undoManager.redo(current);
     applySnapshot(target);
+    updateUndoButtons();
   }
   function replaceSelection(before, after = before, placeholder = "") {
     const textarea = document.querySelector("#editor");
@@ -1991,8 +2078,9 @@ a { color: var(--accent-strong); }
     if (count) count.textContent = matches.length ? `${runtime.editor.searchIndex + 1}\uFF0F${matches.length}\u4EF6` : "0\uFF0F0\u4EF6";
     if (matches.length) {
       const position = matches[runtime.editor.searchIndex];
-      textarea.focus();
+      textarea.focus({ preventScroll: true });
       textarea.setSelectionRange(position, position + term.length);
+      requestAnimationFrame(() => scrollEditorCaretIntoView(textarea, position));
     }
   }
   function moveSearch(direction) {
@@ -2033,9 +2121,8 @@ a { color: var(--accent-strong); }
     if (!doc || doc.deletedAt) return setRoute({ name: "home" });
     const content = doc.type === "markdown" ? renderMarkdown(doc.body) : `<div style="white-space:pre-wrap">${escapeHtml(doc.body)}</div>`;
     app.innerHTML = `<section class="screen preview-screen">
-    ${header({ title: doc.title, back: "preview-back" })}
+    ${header({ title: doc.title, back: "preview-back", extra: '<button class="small-button preview-header-edit" data-action="preview-back">\u7DE8\u96C6\u306B\u623B\u308B</button>' })}
     <article id="preview-content" class="preview-content">${content || '<p class="empty">\u672C\u6587\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</p>'}</article>
-    <button class="button primary preview-edit" data-action="preview-back">\u7DE8\u96C6\u306B\u623B\u308B</button>
   </section>`;
     requestAnimationFrame(() => {
       const preview = document.querySelector("#preview-content");
@@ -2068,27 +2155,24 @@ a { color: var(--accent-strong); }
     const document2 = await getDocument(runtime.editor.documentId);
     openSheet(document2.title, `<p class="row-meta">${countCharacters(document2.body)}\u5B57 \u30FB ${escapeHtml(DOCUMENT_TYPES[document2.type])}</p><div class="sheet-list">
     <button class="menu-button" data-action="open-preview">\u30D7\u30EC\u30D3\u30E5\u30FC<small>\u30AD\u30FC\u30DC\u30FC\u30C9\u306E\u51FA\u306A\u3044\u8AAD\u307F\u8FD4\u3057</small></button>
-    <button class="menu-button" data-action="open-search">\u691C\u7D22\u30FB\u7F6E\u63DB</button>
     ${document2.type === "markdown" ? '<button class="menu-button" data-action="copy-note">note\u7528\u306B\u30B3\u30D4\u30FC</button>' : ""}
     <button class="menu-button" data-action="copy-plain">\u672C\u6587\u3092\u30B3\u30D4\u30FC</button>
     <button class="menu-button" data-action="export-document">\u66F8\u304D\u51FA\u3059\u30FB\u5171\u6709</button>
-    <button class="menu-button" data-action="open-history">\u5C65\u6B74</button>
     <button class="menu-button" data-action="document-info">\u539F\u7A3F\u60C5\u5831</button>
     <button class="menu-button" data-action="open-settings">\u8868\u793A\u8A2D\u5B9A</button>
     <button class="menu-button danger" data-action="trash-document">\u30B4\u30DF\u7BB1\u3078\u79FB\u3059</button>
+    <button class="menu-button" data-action="open-search">\u691C\u7D22\u30FB\u7F6E\u63DB</button>
+    <button class="menu-button" data-action="open-history">\u5C65\u6B74</button>
   </div>`);
   }
   function showMarkdownMenu() {
     openSheet("Markdown", `<div class="sheet-list">
     <button class="menu-button" data-action="md-h1">\u5927\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B # \u3092\u4ED8\u3051\u308B</small></button>
-    <button class="menu-button" data-action="md-h2">\u4E2D\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B ## \u3092\u4ED8\u3051\u308B</small></button>
     <button class="menu-button" data-action="md-h3">\u5C0F\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B ### \u3092\u4ED8\u3051\u308B</small></button>
     <button class="menu-button" data-action="md-bold">\u592A\u5B57</button>
-    <button class="menu-button" data-action="md-italic">\u659C\u4F53</button>
     <button class="menu-button" data-action="md-strike">\u6253\u3061\u6D88\u3057</button>
     <button class="menu-button" data-action="md-quote">\u5F15\u7528</button>
     <button class="menu-button" data-action="md-rule">\u533A\u5207\u308A\u7DDA</button>
-    <button class="menu-button" data-action="md-ruby">\u30EB\u30D3</button>
   </div>`);
   }
   function stickyForm(sticky = {}) {
