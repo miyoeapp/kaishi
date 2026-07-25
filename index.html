@@ -32,6 +32,7 @@
   --editor-font-size: 17px;
   --editor-line-height: 1.9;
   --editor-margin: 20px;
+  --editor-viewport-top: 0px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
@@ -150,20 +151,20 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
-.editor-screen .app-header { position: relative; top: auto; flex: 0 0 auto; }
-.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 46px; overflow: hidden; overscroll-behavior: none; }
-.editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overscroll-behavior: contain; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: touch; }
-.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 5px; height: 44px; padding: 4px 2px; overflow: hidden; border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent); background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(10px); }
-.editor-toolbar::-webkit-scrollbar { display: none; }
-.tool-button { flex: 1 1 0; min-width: 0; height: 36px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--border) 72%, transparent); border-radius: 10px; color: color-mix(in srgb, var(--ink) 70%, var(--paper)); background: color-mix(in srgb, var(--surface) 72%, transparent); font-size: 13px; font-weight: 700; }
-.tool-button:disabled { opacity: .4; }
+.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
+.editor-screen .app-header { position: relative; top: auto; z-index: 30; flex: 0 0 auto; gap: 4px; background: var(--paper); backdrop-filter: none; }
+.editor-screen .app-header > .icon-button { flex-basis: 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
+.editor-screen .app-header > .icon-button:first-child { flex-basis: 42px; width: 42px; }
+.editor-screen .header-title { min-width: 44px; }
+.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 0; overflow: hidden; overscroll-behavior: none; }
+.editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overflow-anchor: none; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: auto; }
+.editor-header-tools { display: flex; align-items: center; flex: 0 0 auto; gap: 3px; margin-top: 5px; }
+.header-tool { display: grid; place-items: center; flex: 0 0 35px; width: 35px; height: 40px; padding: 0; border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 12px; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); background: color-mix(in srgb, var(--surface) 70%, transparent); font-size: 12px; font-weight: 700; }
+.header-tool:disabled { opacity: .28; }
 .history-tool { display: grid; place-items: center; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); }
 .history-tool:disabled { opacity: .28; }
-.history-arrow { display: block; width: 29px; height: 20px; fill: currentColor; }
+.history-arrow { display: block; width: 25px; height: 18px; fill: currentColor; }
 .history-arrow.redo { transform: scaleX(-1); }
-.keyboard-dismiss { font-size: 22px; line-height: 1; }
-body:not(.keyboard-open) .keyboard-dismiss { visibility: hidden; pointer-events: none; }
 
 .search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; max-height: calc(100% - 16px); padding: 10px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .search-row { display: flex; gap: 7px; margin-top: 7px; }
@@ -218,6 +219,12 @@ body.is-dragging { cursor: grabbing; }
   .screen { padding-right: 12px; padding-left: 12px; }
   .header-title { font-size: 14px; }
   .icon-button { flex-basis: 44px; width: 44px; height: 44px; }
+  .editor-screen .app-header { gap: 3px; }
+  .editor-screen .app-header > .icon-button { flex-basis: 38px; width: 38px; }
+  .editor-screen .app-header > .icon-button:first-child { flex-basis: 40px; width: 40px; }
+  .editor-screen .header-title { min-width: 36px; }
+  .editor-header-tools { gap: 2px; }
+  .header-tool { flex-basis: 33px; width: 33px; }
 }
 
 @media (min-width: 721px) {
@@ -237,7 +244,7 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.3.0";
+  var APP_VERSION = "2.4.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -1676,17 +1683,20 @@ body.is-dragging { cursor: grabbing; }
     const viewport = window.visualViewport;
     const update = () => {
       const height = viewport?.height ?? window.innerHeight;
+      const top = viewport?.offsetTop ?? 0;
       const contentHeight = sheet.querySelector(".sheet-inner")?.scrollHeight ?? 0;
       const panelHeight = compact
         ? Math.min(height - 12, Math.max(340, contentHeight))
         : Math.min(760, Math.max(280, height * 0.86));
-      sheet.style.setProperty("--sheet-top", `${Math.round(Math.max(0, height - panelHeight))}px`);
+      sheet.style.setProperty("--sheet-top", `${Math.round(Math.max(0, top + height - panelHeight))}px`);
       sheet.style.setProperty("--sheet-height", `${Math.round(panelHeight)}px`);
     };
     viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
     window.addEventListener("resize", update);
     stopSheetViewportSync = () => {
       viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
     update();
@@ -2039,22 +2049,21 @@ body.is-dragging { cursor: grabbing; }
     if (!previous) undoManager.clear();
     const toolbar = doc.type === "markdown" ? `${historyToolButton("undo")}${historyToolButton("redo")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${historyToolButton("undo")}${historyToolButton("redo")}`;
     app.innerHTML = `<section class="screen editor-screen">
-    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", titleAction: "edit-document-title", titleActionLabel: "\u539F\u7A3F\u540D\u3092\u5909\u66F4", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button><button class="icon-button keyboard-dismiss" data-action="hide-keyboard" aria-label="\u30AD\u30FC\u30DC\u30FC\u30C9\u3092\u9589\u3058\u308B">\u2304</button>' })}
+    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", titleAction: "edit-document-title", titleActionLabel: "\u539F\u7A3F\u540D\u3092\u5909\u66F4", extra: `<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button><div class="editor-header-tools" aria-label="\u7DE8\u96C6\u88DC\u52A9">${toolbar}</div>` })}
     <div id="save-error-slot"></div>
     <div class="editor-wrap">
       ${runtime.editor.searchOpen ? searchPanel() : ""}
       <textarea id="editor" class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="\u672C\u6587" placeholder="\u3053\u3053\u306B\u66F8\u304D\u59CB\u3081\u307E\u3059\u3002">${escapeHtml(doc.body)}</textarea>
-      <div class="editor-toolbar" aria-label="\u7DE8\u96C6\u88DC\u52A9">${toolbar}</div>
     </div>
   </section>`;
     bindEditor();
   }
   function toolButton(action, label, aria = label) {
-    return `<button class="tool-button" data-action="${action}" aria-label="${escapeHtml(aria)}">${escapeHtml(label)}</button>`;
+    return `<button class="header-tool" data-action="${action}" aria-label="${escapeHtml(aria)}">${escapeHtml(label)}</button>`;
   }
   function historyToolButton(action) {
     const isRedo = action === "redo";
-    return `<button class="tool-button history-tool" data-action="${action}" aria-label="${isRedo ? "\u9032\u3080" : "\u623B\u308B"}">
+    return `<button class="header-tool history-tool" data-action="${action}" aria-label="${isRedo ? "\u9032\u3080" : "\u623B\u308B"}">
     <svg class="history-arrow ${isRedo ? "redo" : "undo"}" viewBox="0 0 40 28" aria-hidden="true"><path d="M8 5v6.2C11.6 8.1 16.4 6.5 21.4 7c7.2.7 13 5.6 15 12.2l-5.5 1.7c-1.3-4.3-5.2-7.6-10.1-8-3.5-.4-6.9.7-9.5 3l5.8 5.3H2V5h6Z"/></svg>
   </button>`;
   }
@@ -2089,7 +2098,7 @@ body.is-dragging { cursor: grabbing; }
         performUndo(event.shiftKey ? "redo" : "undo");
       }
     });
-    document.querySelector(".editor-toolbar")?.addEventListener("pointerdown", (event) => {
+    document.querySelector(".editor-header-tools")?.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) event.preventDefault();
     });
     runtime.editor.historyTimer = setInterval(async () => {
@@ -2116,20 +2125,26 @@ body.is-dragging { cursor: grabbing; }
     let frame = 0;
     const updateHeightNow = () => {
       const height = viewport?.height ?? window.innerHeight;
+      const top = viewport?.offsetTop ?? 0;
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
-      if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
+        document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
+      }
     };
     const updateHeight = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(updateHeightNow);
     };
     viewport?.addEventListener("resize", updateHeight);
+    viewport?.addEventListener("scroll", updateHeight);
     window.addEventListener("resize", updateHeight);
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
       viewport?.removeEventListener("resize", updateHeight);
+      viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
     };
     updateHeightNow();
@@ -2533,8 +2548,8 @@ body.is-dragging { cursor: grabbing; }
   </form>`, { compact: true });
     const input = sheet.querySelector('[name="title"]');
     setTimeout(() => {
-      input?.focus();
-      input?.select();
+      input?.focus({ preventScroll: true });
+      input?.setSelectionRange(0, input.value.length);
     }, 0);
     sheet.querySelector("#document-title-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -2557,8 +2572,8 @@ body.is-dragging { cursor: grabbing; }
   </form>`, { compact: true });
     const input = sheet.querySelector('[name="name"]');
     setTimeout(() => {
-      input?.focus();
-      input?.select();
+      input?.focus({ preventScroll: true });
+      input?.setSelectionRange(0, input.value.length);
     }, 0);
     sheet.querySelector("#folder-title-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
