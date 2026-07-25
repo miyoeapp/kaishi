@@ -153,13 +153,12 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 
 .editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
 .editor-screen .app-header { position: relative; top: auto; z-index: 30; flex: 0 0 auto; gap: 4px; background: var(--paper); backdrop-filter: none; }
-.editor-screen .app-header > .icon-button { flex-basis: 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
-.editor-screen .app-header > .icon-button:first-child { flex-basis: 42px; width: 42px; }
+.editor-screen .app-header > .icon-button { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-screen .header-title { min-width: 44px; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 0; overflow: hidden; overscroll-behavior: none; }
 .editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overflow-anchor: none; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: auto; }
-.editor-header-tools { display: flex; align-items: center; flex: 0 0 auto; gap: 3px; margin-top: 5px; }
-.header-tool { display: grid; place-items: center; flex: 0 0 35px; width: 35px; height: 40px; padding: 0; border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 12px; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); background: color-mix(in srgb, var(--surface) 70%, transparent); font-size: 12px; font-weight: 700; }
+.editor-header-tools { display: flex; align-items: center; flex: 0 0 auto; gap: 4px; margin-top: 5px; }
+.header-tool { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 13px; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); background: var(--surface); font-size: 12px; font-weight: 700; }
 .header-tool:disabled { opacity: .28; }
 .history-tool { display: grid; place-items: center; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); }
 .history-tool:disabled { opacity: .28; }
@@ -220,11 +219,10 @@ body.is-dragging { cursor: grabbing; }
   .header-title { font-size: 14px; }
   .icon-button { flex-basis: 44px; width: 44px; height: 44px; }
   .editor-screen .app-header { gap: 3px; }
-  .editor-screen .app-header > .icon-button { flex-basis: 38px; width: 38px; }
-  .editor-screen .app-header > .icon-button:first-child { flex-basis: 40px; width: 40px; }
+  .editor-screen .app-header > .icon-button { flex: 0 0 40px; width: 40px; height: 40px; }
   .editor-screen .header-title { min-width: 36px; }
-  .editor-header-tools { gap: 2px; }
-  .header-tool { flex-basis: 33px; width: 33px; }
+  .editor-header-tools { gap: 3px; }
+  .header-tool { flex: 0 0 40px; width: 40px; height: 40px; }
 }
 
 @media (min-width: 721px) {
@@ -244,7 +242,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.4.0";
+  // 懐紙 2.5.0
+  var APP_VERSION = "2.5.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -629,6 +628,7 @@ body.is-dragging { cursor: grabbing; }
       title: await uniqueDocumentTitle("\u7121\u984C", target),
       body: "",
       autoTitle: true,
+      emptyDraft: true,
       type,
       folderId: target,
       color: "gray",
@@ -646,10 +646,13 @@ body.is-dragging { cursor: grabbing; }
     const current = await getDocument(id);
     if (!active(current)) throw new Error("\u4FDD\u5B58\u3059\u308B\u539F\u7A3F\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
     const title = patch.title !== void 0 ? await uniqueDocumentTitle(patch.title, patch.folderId ?? current.folderId, id) : current.title;
+    const nextBody = patch.body !== void 0 ? String(patch.body) : current.body;
+    const emptyDraft = patch.emptyDraft !== void 0 ? patch.emptyDraft : nextBody.trim() ? false : current.emptyDraft;
     const next = {
       ...current,
       ...patch,
       title,
+      emptyDraft,
       id,
       updatedAt: nowIso(),
       revision: incrementRevision ? (current.revision ?? 0) + 1 : current.revision
@@ -2098,6 +2101,11 @@ body.is-dragging { cursor: grabbing; }
         performUndo(event.shiftKey ? "redo" : "undo");
       }
     });
+    textarea.addEventListener("click", () => {
+      if (!document.body.classList.contains("keyboard-open")) return;
+      if (textarea.selectionStart !== textarea.selectionEnd) return;
+      requestAnimationFrame(() => revealEditorCaret(textarea));
+    });
     document.querySelector(".editor-header-tools")?.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) event.preventDefault();
     });
@@ -2123,6 +2131,8 @@ body.is-dragging { cursor: grabbing; }
     const viewport = window.visualViewport;
     let fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
     let frame = 0;
+    let previousKeyboardOpen = false;
+    let previousHeight = 0;
     const updateHeightNow = () => {
       const height = viewport?.height ?? window.innerHeight;
       const top = viewport?.offsetTop ?? 0;
@@ -2133,6 +2143,14 @@ body.is-dragging { cursor: grabbing; }
         document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
         document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
       }
+      const textarea = document.querySelector("#editor");
+      const editorHasFocus = document.activeElement === textarea;
+      const viewportShrank = previousHeight > 0 && height < previousHeight - 24;
+      if (editorHasFocus && keyboardOpen && (!previousKeyboardOpen || viewportShrank)) {
+        requestAnimationFrame(() => requestAnimationFrame(() => revealEditorCaret(textarea)));
+      }
+      previousKeyboardOpen = keyboardOpen;
+      previousHeight = height;
     };
     const updateHeight = () => {
       cancelAnimationFrame(frame);
@@ -2149,8 +2167,8 @@ body.is-dragging { cursor: grabbing; }
     };
     updateHeightNow();
   }
-  function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
-    if (!textarea || textarea.clientHeight <= 0) return;
+  function editorCaretMetrics(textarea, position = textarea.selectionStart) {
+    if (!textarea || textarea.clientHeight <= 0) return null;
     const style = getComputedStyle(textarea);
     const mirror = document.createElement("div");
     Object.assign(mirror.style, {
@@ -2178,9 +2196,31 @@ body.is-dragging { cursor: grabbing; }
     marker.textContent = textarea.value.slice(position, position + 1) || "\u200B";
     mirror.append(marker);
     document.body.append(mirror);
-    const target = marker.offsetTop - textarea.clientHeight * 0.45;
-    textarea.scrollTop = Math.max(0, Math.min(target, textarea.scrollHeight - textarea.clientHeight));
+    const result = {
+      top: marker.offsetTop,
+      height: Math.max(marker.offsetHeight, parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.9)
+    };
     mirror.remove();
+    return result;
+  }
+  function revealEditorCaret(textarea, position = textarea.selectionStart) {
+    const caret = editorCaretMetrics(textarea, position);
+    if (!caret) return;
+    const style = getComputedStyle(textarea);
+    const paddingTop = parseFloat(style.paddingTop || "0");
+    const paddingBottom = parseFloat(style.paddingBottom || "0");
+    const safeTop = textarea.scrollTop + paddingTop + 12;
+    const safeBottom = textarea.scrollTop + textarea.clientHeight - paddingBottom - 22;
+    let next = textarea.scrollTop;
+    if (caret.top < safeTop) next = caret.top - paddingTop - 12;
+    else if (caret.top + caret.height > safeBottom) next = caret.top + caret.height - textarea.clientHeight + paddingBottom + 22;
+    textarea.scrollTop = Math.max(0, Math.min(next, textarea.scrollHeight - textarea.clientHeight));
+  }
+  function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
+    const caret = editorCaretMetrics(textarea, position);
+    if (!caret) return;
+    const target = caret.top - textarea.clientHeight * 0.45;
+    textarea.scrollTop = Math.max(0, Math.min(target, textarea.scrollHeight - textarea.clientHeight));
   }
   function createEditorMirror(textarea) {
     const style = getComputedStyle(textarea);
@@ -2257,6 +2297,7 @@ body.is-dragging { cursor: grabbing; }
       const usesAutomaticTitle = current.autoTitle === true || current.autoTitle === void 0 && /^\u7121\u984C(?: \d+)?$/.test(current.title);
       const automaticTitle = usesAutomaticTitle ? titleFromBody(textarea.value) : "";
       const patch = { body: textarea.value };
+      if (textarea.value.trim()) patch.emptyDraft = false;
       if (usesAutomaticTitle) {
         patch.autoTitle = true;
         if (automaticTitle) patch.title = automaticTitle;
@@ -2289,6 +2330,14 @@ body.is-dragging { cursor: grabbing; }
   }
   async function prepareToLeaveEditor() {
     if (!runtime.editor) return true;
+    const textarea = document.querySelector("#editor");
+    const current = runtime.editor.document;
+    if (current?.emptyDraft === true && !(textarea?.value ?? current.body).trim()) {
+      clearEditorTimers();
+      await permanentlyDelete("document", current.id);
+      runtime.editor = null;
+      return true;
+    }
     const saved = await saveEditorNow();
     if (!saved && runtime.editor.failedError) {
       showToast("\u307E\u3060\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u3053\u306E\u753B\u9762\u306B\u7559\u307E\u308A\u307E\u3059\u3002");
@@ -2310,10 +2359,11 @@ body.is-dragging { cursor: grabbing; }
   function applySnapshot(snapshot) {
     const textarea = document.querySelector("#editor");
     if (!textarea || !snapshot) return;
+    const scrollTop = textarea.scrollTop;
     textarea.value = snapshot.value;
     textarea.setSelectionRange(snapshot.start, snapshot.end);
     textarea.focus({ preventScroll: true });
-    requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
+    restoreEditorScroll(textarea, scrollTop);
     setSaveState("\u5165\u529B\u4E2D");
     scheduleEditorSave();
     updateUndoButtons();
@@ -2329,13 +2379,15 @@ body.is-dragging { cursor: grabbing; }
     const textarea = document.querySelector("#editor");
     if (!textarea) return;
     const snapshot = currentEditorSnapshot();
+    const scrollTop = textarea.scrollTop;
     undoManager.record(snapshot);
     const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || placeholder;
     const replacement = `${before}${selected}${after}`;
     const start = textarea.selectionStart;
     textarea.setRangeText(replacement, textarea.selectionStart, textarea.selectionEnd, "end");
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
     if (!snapshot.value.slice(snapshot.start, snapshot.end)) textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+    restoreEditorScroll(textarea, scrollTop);
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
     updateUndoButtons();
   }
@@ -2343,6 +2395,7 @@ body.is-dragging { cursor: grabbing; }
     const textarea = document.querySelector("#editor");
     if (!textarea) return;
     const snapshot = currentEditorSnapshot();
+    const scrollTop = textarea.scrollTop;
     undoManager.record(snapshot);
     const lineStart = textarea.value.lastIndexOf("\n", textarea.selectionStart - 1) + 1;
     const endBreak = textarea.value.indexOf("\n", textarea.selectionEnd);
@@ -2350,9 +2403,22 @@ body.is-dragging { cursor: grabbing; }
     const selected = textarea.value.slice(lineStart, lineEnd);
     const replacement = selected.split("\n").map((line) => `${prefix}${line}`).join("\n");
     textarea.setRangeText(replacement, lineStart, lineEnd, "end");
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
+    restoreEditorScroll(textarea, scrollTop);
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
     updateUndoButtons();
+  }
+  function restoreEditorScroll(textarea, scrollTop) {
+    if (!textarea) return;
+    const restore = () => {
+      if (document.contains(textarea)) textarea.scrollTop = scrollTop;
+    };
+    restore();
+    requestAnimationFrame(() => {
+      restore();
+      requestAnimationFrame(restore);
+    });
+    setTimeout(restore, 90);
   }
   function searchPanel() {
     return `<div class="search-panel">
@@ -2555,7 +2621,7 @@ body.is-dragging { cursor: grabbing; }
       event.preventDefault();
       const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
       if (!title) return;
-      const updated = await saveDocument(document2.id, { title, autoTitle: false });
+      const updated = await saveDocument(document2.id, { title, autoTitle: false, emptyDraft: false });
       runtime.editor.document = updated;
       const titleButton = document.querySelector(".header-title-button");
       if (titleButton) titleButton.textContent = updated.title;
