@@ -150,18 +150,20 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
-.editor-screen .app-header { flex: 0 0 auto; }
-.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; overflow: hidden; overscroll-behavior: none; }
-.editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; overflow-y: auto; overscroll-behavior: contain; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
+.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
+.editor-screen .app-header { position: relative; top: auto; flex: 0 0 auto; }
+.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 46px; overflow: hidden; overscroll-behavior: none; }
+.editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overscroll-behavior: contain; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: touch; }
+.editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 5px; height: 44px; padding: 4px 2px; overflow: hidden; border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent); background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(10px); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
-.tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
+.tool-button { flex: 1 1 0; min-width: 0; height: 36px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--border) 72%, transparent); border-radius: 10px; color: color-mix(in srgb, var(--ink) 70%, var(--paper)); background: color-mix(in srgb, var(--surface) 72%, transparent); font-size: 13px; font-weight: 700; }
 .tool-button:disabled { opacity: .4; }
 .history-tool { display: grid; place-items: center; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); }
 .history-tool:disabled { opacity: .28; }
-.history-arrow { display: block; width: 34px; height: 24px; fill: currentColor; }
+.history-arrow { display: block; width: 29px; height: 20px; fill: currentColor; }
 .history-arrow.redo { transform: scaleX(-1); }
+.keyboard-dismiss { font-size: 22px; line-height: 1; }
+body:not(.keyboard-open) .keyboard-dismiss { visibility: hidden; pointer-events: none; }
 
 .search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; max-height: calc(100% - 16px); padding: 10px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .search-row { display: flex; gap: 7px; margin-top: 7px; }
@@ -193,11 +195,16 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .danger-zone { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
 .drag-list { display: grid; gap: 8px; }
 .drag-item { display: flex; align-items: center; min-height: 54px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-.reorder-list .reorder-item { -webkit-touch-callout: none; }
+.reorder-list, .reorder-list .reorder-item, .reorder-list .reorder-item * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .reorder-list.is-reordering { user-select: none; -webkit-user-select: none; }
 .reorder-list.is-reordering .reorder-item { transition: transform .12s ease, opacity .12s ease, box-shadow .12s ease; }
-.reorder-list .reorder-item.is-dragging { z-index: 4; opacity: .58; transform: scale(.98); box-shadow: var(--shadow); pointer-events: none; }
+.reorder-list .reorder-item.is-dragging { visibility: hidden; pointer-events: none; }
 .reorder-list .reorder-item.is-drop-target { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+.drag-ghost { position: fixed !important; z-index: 120; margin: 0 !important; opacity: .68; transform: scale(1.025); transform-origin: center; box-shadow: 0 14px 38px rgb(44 41 36 / 24%); pointer-events: none !important; user-select: none; -webkit-user-select: none; transition: none !important; }
+body.is-dragging { cursor: grabbing; }
+
+.sheet.compact-sheet { top: var(--sheet-top, auto); height: var(--sheet-height, auto); max-height: calc(100dvh - 12px); }
+.sheet.compact-sheet .sheet-inner { height: auto; max-height: var(--sheet-height, calc(100dvh - 12px)); }
 
 .toast { position: fixed; z-index: 100; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); left: 16px; max-width: 520px; margin: auto; padding: 12px 15px; border-radius: 13px; color: #fff; background: #282622; box-shadow: var(--shadow); text-align: center; font-weight: 700; }
 .install-screen { display: grid; place-items: center; min-height: 100dvh; padding: max(28px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom)); background: var(--paper); }
@@ -230,7 +237,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.2.0";
+  var APP_VERSION = "2.3.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -1619,10 +1626,10 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     root.style.setProperty("--editor-margin", { compact: "12px", standard: "20px", wide: "30px" }[settings.pageMargin] ?? "20px");
     root.style.setProperty("--editor-font", settings.fontFamily === "gothic" ? "var(--font-sans)" : "var(--font-mincho)");
   }
-  function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false, titleAction = null } = {}) {
+  function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false, titleAction = null, titleActionLabel = "\u540D\u524D\u3092\u5909\u66F4" } = {}) {
     return `<header class="app-header ${back ? "has-back" : "no-back"} ${brand ? "brand-header" : ""}">
     ${back ? `<button class="icon-button" data-action="${back}" aria-label="\u623B\u308B">\u2190</button>` : ""}
-    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span class="header-title-main">${titleAction ? `<button class="header-title-button" data-action="${titleAction}" aria-label="\u539F\u7A3F\u540D\u3092\u5909\u66F4">${escapeHtml(title)}</button>` : escapeHtml(title)}</span><span class="save-state">${escapeHtml(subtitle)}</span></h1>`}
+    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span class="header-title-main">${titleAction ? `<button class="header-title-button" data-action="${titleAction}" aria-label="${escapeHtml(titleActionLabel)}">${escapeHtml(title)}</button>` : escapeHtml(title)}</span><span class="save-state">${escapeHtml(subtitle)}</span></h1>`}
     ${extra}
     ${menu ? `<button class="icon-button" data-action="${menu}" aria-label="\u30E1\u30CB\u30E5\u30FC">\u2026</button>` : ""}
   </header>`;
@@ -1644,16 +1651,17 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (runtime.route.name === "about") return renderAbout();
     return renderHome();
   }
-  function openSheet(title, content, { wide = false } = {}) {
+  function openSheet(title, content, { wide = false, compact = false } = {}) {
     document.body.classList.add("sheet-open");
     sheet.classList.toggle("wide", wide);
+    sheet.classList.toggle("compact-sheet", compact);
     sheet.innerHTML = `<div class="sheet-inner">
     <div class="sheet-handle" aria-hidden="true"></div>
     <div class="sheet-header"><h2 id="sheet-title">${escapeHtml(title)}</h2><button class="icon-button" data-sheet-close aria-label="\u9589\u3058\u308B">\xD7</button></div>
     ${content}
   </div>`;
     if (!sheet.open) sheet.showModal();
-    bindSheetViewport();
+    bindSheetViewport({ compact });
   }
   function closeSheet() {
     stopSheetViewportSync();
@@ -1663,12 +1671,15 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     sheet.innerHTML = "";
     document.body.classList.remove("sheet-open");
   }
-  function bindSheetViewport() {
+  function bindSheetViewport({ compact = false } = {}) {
     stopSheetViewportSync();
     const viewport = window.visualViewport;
     const update = () => {
       const height = viewport?.height ?? window.innerHeight;
-      const panelHeight = Math.min(760, Math.max(280, height * 0.86));
+      const contentHeight = sheet.querySelector(".sheet-inner")?.scrollHeight ?? 0;
+      const panelHeight = compact
+        ? Math.min(height - 12, Math.max(340, contentHeight))
+        : Math.min(760, Math.max(280, height * 0.86));
       sheet.style.setProperty("--sheet-top", `${Math.round(Math.max(0, height - panelHeight))}px`);
       sheet.style.setProperty("--sheet-height", `${Math.round(panelHeight)}px`);
     };
@@ -1790,7 +1801,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     const snapshot = await getFolderSnapshot(folderId);
     const parentAction = snapshot.folder.parentId ? "folder-back-parent" : "go-home";
     app.innerHTML = `<section class="screen folder-screen">
-    ${header({ title: snapshot.folder.name, back: parentAction, menu: "folder-menu" })}
+    ${header({ title: snapshot.folder.name, back: parentAction, menu: "folder-menu", titleAction: snapshot.folder.system ? null : "edit-folder-title", titleActionLabel: "\u30D5\u30A9\u30EB\u30C0\u540D\u3092\u5909\u66F4" })}
     ${snapshot.childFolders.length ? `<div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div><div class="list folder-grid reorder-list" data-reorder-store="${STORE_NAMES.folders}" data-reorder-axis="grid">${snapshot.childFolders.map((folder) => folderRow(folder, "", true)).join("")}</div>` : ""}
     <div class="section-title-row"><h2 class="section-title">\u539F\u7A3F</h2></div>
     ${snapshot.documents.length ? `<div class="list reorder-list" data-reorder-store="${STORE_NAMES.documents}" data-reorder-axis="y">${snapshot.documents.map((doc) => documentRow(doc, "", true)).join("")}</div>` : `<div class="empty">\u307E\u3060\u539F\u7A3F\u304C\u3042\u308A\u307E\u305B\u3093<br><button class="button primary" style="margin-top:12px" data-action="new-document" data-folder-id="${folderId}">\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F</button></div>`}
@@ -1804,11 +1815,14 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
   function bindLongPressReorder(container) {
     let timer = null;
     let activeItem = null;
+    let dragGhost = null;
     let touchId = null;
     let startX = 0;
     let startY = 0;
     let lastX = 0;
     let lastY = 0;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
     let initialOrder = [];
     let suppressClickUntil = 0;
     const itemFor = (target) => target instanceof Element ? target.closest(".reorder-item[data-reorder-id]") : null;
@@ -1822,15 +1836,53 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       lastX = x;
       lastY = y;
       initialOrder = [...container.querySelectorAll(":scope > .reorder-item")].map((node) => node.dataset.reorderId);
+      const rect = item.getBoundingClientRect();
+      dragOffsetX = Math.min(Math.max(0, x - rect.left), rect.width);
+      dragOffsetY = Math.min(Math.max(0, y - rect.top), rect.height);
+      dragGhost = item.cloneNode(true);
+      dragGhost.classList.remove("is-dragging", "is-drop-target", "reorder-item");
+      dragGhost.classList.add("drag-ghost");
+      dragGhost.removeAttribute("data-action");
+      dragGhost.removeAttribute("data-reorder-id");
+      Object.assign(dragGhost.style, {
+        left: `${Math.round(x - dragOffsetX)}px`,
+        top: `${Math.round(y - dragOffsetY)}px`,
+        width: `${Math.round(rect.width)}px`,
+        height: `${Math.round(rect.height)}px`
+      });
+      document.body.append(dragGhost);
+      document.body.classList.add("is-dragging");
       container.classList.add("is-reordering");
       item.classList.add("is-dragging");
       suppressClickUntil = Date.now() + 900;
       navigator.vibrate?.(18);
     };
+    const moveGhost = (x, y) => {
+      if (!dragGhost) return;
+      dragGhost.style.left = `${Math.round(x - dragOffsetX)}px`;
+      dragGhost.style.top = `${Math.round(y - dragOffsetY)}px`;
+    };
+    const autoScrollAt = (x, y) => {
+      if (!activeItem) return;
+      const axis = container.dataset.reorderAxis;
+      if (axis === "x") {
+        const rect = container.getBoundingClientRect();
+        if (x < rect.left + 44) container.scrollLeft -= 12;
+        else if (x > rect.right - 44) container.scrollLeft += 12;
+        return;
+      }
+      const scroller = container.closest(".screen");
+      if (!scroller) return;
+      const rect = scroller.getBoundingClientRect();
+      if (y < rect.top + 92) scroller.scrollTop -= 14;
+      else if (y > rect.bottom - 76) scroller.scrollTop += 14;
+    };
     const reorderAt = (x, y) => {
       if (!activeItem) return;
       lastX = x;
       lastY = y;
+      moveGhost(x, y);
+      autoScrollAt(x, y);
       container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
       const target = itemFor(document.elementFromPoint(x, y));
       if (!target || target === activeItem || target.parentElement !== container) return;
@@ -1850,6 +1902,9 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       clearPending();
       if (!activeItem) return;
       activeItem.classList.remove("is-dragging");
+      dragGhost?.remove();
+      dragGhost = null;
+      document.body.classList.remove("is-dragging");
       container.classList.remove("is-reordering");
       container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
       const ids = [...container.querySelectorAll(":scope > .reorder-item")].map((node) => node.dataset.reorderId);
@@ -1865,8 +1920,10 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     };
     const cancel = () => {
       clearPending();
-      if (!activeItem) return;
-      activeItem.classList.remove("is-dragging");
+      activeItem?.classList.remove("is-dragging");
+      dragGhost?.remove();
+      dragGhost = null;
+      document.body.classList.remove("is-dragging");
       container.classList.remove("is-reordering");
       container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
       activeItem = null;
@@ -1982,7 +2039,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (!previous) undoManager.clear();
     const toolbar = doc.type === "markdown" ? `${historyToolButton("undo")}${historyToolButton("redo")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${historyToolButton("undo")}${historyToolButton("redo")}`;
     app.innerHTML = `<section class="screen editor-screen">
-    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", titleAction: "edit-document-title", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button>' })}
+    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", titleAction: "edit-document-title", titleActionLabel: "\u539F\u7A3F\u540D\u3092\u5909\u66F4", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button><button class="icon-button keyboard-dismiss" data-action="hide-keyboard" aria-label="\u30AD\u30FC\u30DC\u30FC\u30C9\u3092\u9589\u3058\u308B">\u2304</button>' })}
     <div id="save-error-slot"></div>
     <div class="editor-wrap">
       ${runtime.editor.searchOpen ? searchPanel() : ""}
@@ -2014,7 +2071,6 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       runtime.editor.composing = false;
       scheduleEditorSave();
       updateUndoButtons();
-      requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
     });
     textarea.addEventListener("beforeinput", () => {
       if (!runtime.editor.composing) {
@@ -2032,10 +2088,6 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         event.preventDefault();
         performUndo(event.shiftKey ? "redo" : "undo");
       }
-    });
-    textarea.addEventListener("focus", () => {
-      setTimeout(() => scrollEditorCaretIntoView(textarea), 100);
-      setTimeout(() => scrollEditorCaretIntoView(textarea), 320);
     });
     document.querySelector(".editor-toolbar")?.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) event.preventDefault();
@@ -2064,24 +2116,20 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     let frame = 0;
     const updateHeightNow = () => {
       const height = viewport?.height ?? window.innerHeight;
-      const top = Math.max(0, viewport?.offsetTop ?? 0);
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
       if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
-      document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
     };
     const updateHeight = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(updateHeightNow);
     };
     viewport?.addEventListener("resize", updateHeight);
-    viewport?.addEventListener("scroll", updateHeight);
     window.addEventListener("resize", updateHeight);
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
       viewport?.removeEventListener("resize", updateHeight);
-      viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
     };
     updateHeightNow();
@@ -2482,7 +2530,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     <label class="field"><span>\u539F\u7A3F\u540D</span><input class="text-input" name="title" required maxlength="120" value="${escapeHtml(document2.title)}"></label>
     <p class="row-meta">\u3053\u3053\u3067\u540D\u524D\u3092\u5909\u3048\u308B\u3068\u3001\u672C\u6587\u306E1\u884C\u76EE\u304B\u3089\u306E\u81EA\u52D5\u547D\u540D\u306F\u7D42\u4E86\u3057\u307E\u3059\u3002</p>
     <div class="button-row"><button class="button primary" type="submit">\u5909\u66F4\u3092\u4FDD\u5B58</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
-  </form>`);
+  </form>`, { compact: true });
     const input = sheet.querySelector('[name="title"]');
     setTimeout(() => {
       input?.focus();
@@ -2498,6 +2546,28 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       if (titleButton) titleButton.textContent = updated.title;
       closeSheet();
       showToast("\u539F\u7A3F\u540D\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\u3002");
+    });
+  }
+  async function folderTitleForm() {
+    const folder = await getFolder(runtime.route.folderId);
+    if (!folder || folder.system) return;
+    openSheet("\u30D5\u30A9\u30EB\u30C0\u540D\u3092\u5909\u66F4", `<form id="folder-title-form">
+    <label class="field"><span>\u30D5\u30A9\u30EB\u30C0\u540D</span><input class="text-input" name="name" required maxlength="80" value="${escapeHtml(folder.name)}"></label>
+    <div class="button-row"><button class="button primary" type="submit">\u5909\u66F4\u3092\u4FDD\u5B58</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+  </form>`, { compact: true });
+    const input = sheet.querySelector('[name="name"]');
+    setTimeout(() => {
+      input?.focus();
+      input?.select();
+    }, 0);
+    sheet.querySelector("#folder-title-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = String(new FormData(event.currentTarget).get("name") ?? "").trim();
+      if (!name) return;
+      await updateFolder(folder.id, { name });
+      closeSheet();
+      await renderFolder(folder.id);
+      showToast("\u30D5\u30A9\u30EB\u30C0\u540D\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\u3002");
     });
   }
   function stickyForm(sticky = {}) {
@@ -2840,6 +2910,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       if (action === "folder-menu") return showFolderMenu();
       if (action === "new-folder") return folderForm(element.dataset.parentId || null);
       if (action === "edit-folder") return folderForm((await getFolder(element.dataset.id)).parentId, await getFolder(element.dataset.id));
+      if (action === "edit-folder-title") return folderTitleForm();
       if (action === "move-folder") return showMovePicker("folder", element.dataset.id);
       if (action === "reorder-folder-items") return showFolderContentsReorder(element.dataset.id);
       if (action === "export-folder") {
@@ -2872,6 +2943,11 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       if (action === "editor-back") return leaveEditor(runtime.editor.returnRoute || { name: "home" });
       if (action === "document-menu") return showDocumentMenu();
       if (action === "edit-document-title") return documentTitleForm();
+      if (action === "hide-keyboard") {
+        document.querySelector("#editor")?.blur();
+        document.body.classList.remove("keyboard-open");
+        return;
+      }
       if (action === "undo" || action === "redo") return performUndo(action);
       if (action === "markdown-menu") return showMarkdownMenu();
       if (action === "md-h1") {
