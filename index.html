@@ -54,7 +54,9 @@
 
 * { box-sizing: border-box; }
 html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
+html { position: fixed; inset: 0; overscroll-behavior: none; }
 body { position: fixed; inset: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; touch-action: manipulation; }
+body.editor-open { overflow: hidden; }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 a { color: var(--accent-strong); }
@@ -75,6 +77,8 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .header-title { flex: 1; min-width: 0; height: 52px; margin: 0; padding-top: 3px; text-align: left; font-size: 16px; }
 .header-title-main, .save-state { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .header-title-main { height: 23px; line-height: 23px; }
+.header-title-button { display: block; width: 100%; height: 23px; padding: 0; overflow: hidden; border: 0; color: inherit; background: transparent; text-align: left; text-overflow: ellipsis; white-space: nowrap; line-height: 23px; font-weight: inherit; }
+.header-title-button:active { color: var(--accent-strong); }
 .save-state { min-height: 16px; margin-top: 1px; font-size: 11px; line-height: 16px; font-weight: 400; color: var(--muted); }
 .app-header > .icon-button, .app-header > .small-button { margin-top: 3px; }
 
@@ -107,8 +111,8 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .sticky-card time { display: block; margin-top: 7px; font-size: 11px; opacity: .62; }
 
 .list { display: grid; gap: 8px; }
-.home-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.home-folder-grid .row-button { min-width: 0; }
+.home-folder-grid, .folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-folder-grid .row-button, .folder-grid .row-button { min-width: 0; }
 .row-button { display: flex; align-items: center; width: 100%; min-height: 58px; padding: 10px 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); text-align: left; cursor: pointer; }
 .color-bar { align-self: stretch; flex: 0 0 7px; margin: -11px 11px -11px -13px; border-radius: 13px 0 0 13px; }
 .folder-mark { position: relative; flex: 0 0 24px; width: 24px; height: 17px; margin-right: 12px; border-radius: 4px; background: var(--item-color); }
@@ -146,25 +150,29 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; }
+.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
 .editor-screen .app-header { flex: 0 0 auto; }
-.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; }
-.editor { width: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 58px; overflow: hidden; overscroll-behavior: none; }
+.editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 18px var(--editor-margin) 42px; overflow-y: auto; overscroll-behavior: contain; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .editor-toolbar { position: absolute; right: 0; bottom: 0; left: 0; display: flex; gap: 6px; height: 54px; padding: 5px 2px; overflow: hidden; background: var(--paper); }
 .editor-toolbar::-webkit-scrollbar { display: none; }
 .tool-button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-weight: 700; }
 .tool-button:disabled { opacity: .4; }
-.history-tool { display: grid; place-items: center; }
+.history-tool { display: grid; place-items: center; color: color-mix(in srgb, var(--ink) 58%, var(--paper)); }
+.history-tool:disabled { opacity: .28; }
 .history-arrow { display: block; width: 34px; height: 24px; fill: currentColor; }
 .history-arrow.redo { transform: scaleX(-1); }
 
-.search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
+.search-panel { position: absolute; z-index: 12; top: 10px; right: 6px; left: 6px; max-height: calc(100% - 16px); padding: 10px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .search-row { display: flex; gap: 7px; margin-top: 7px; }
 .search-row:first-child { margin-top: 0; }
 #replace-row { display: grid; gap: 8px; padding-top: 10px; }
 #replace-row .search-row { margin-top: 0; }
 .search-row .text-input { min-width: 0; }
 .search-count { display: grid; place-items: center; flex: 0 0 58px; color: var(--muted); font-size: 12px; }
+.search-result-preview { min-height: 48px; margin-top: 8px; padding: 10px 12px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 12px; color: var(--muted); background: var(--surface); font-family: var(--editor-font, var(--font-mincho)); font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.search-result-preview mark { padding: 1px 2px; border-radius: 4px; color: var(--ink); background: #f2d97b; }
+:root[data-theme="dark"] .search-result-preview mark { color: #211f1b; background: #e1c96f; }
 
 .preview-screen { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
 .preview-content { flex: 1; overflow-y: auto; padding: 18px var(--editor-margin) 40px; border: 0; border-radius: 0; background: var(--surface); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); }
@@ -175,6 +183,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .preview-content blockquote { margin: 1em 0; padding: .1em 1em; border-left: 4px solid var(--accent); color: var(--muted); }
 .preview-content .blank-line { height: calc(var(--editor-font-size) * var(--editor-line-height)); }
 .preview-content ruby rt { font-size: .55em; }
+.preview-content em { color: var(--muted); font-style: italic; }
 .plain-line { min-height: calc(var(--editor-font-size) * var(--editor-line-height)); white-space: pre-wrap; overflow-wrap: break-word; }
 .preview-header-edit { flex: 0 0 auto; white-space: nowrap; }
 
@@ -184,6 +193,11 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .danger-zone { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
 .drag-list { display: grid; gap: 8px; }
 .drag-item { display: flex; align-items: center; min-height: 54px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.reorder-list .reorder-item { -webkit-touch-callout: none; }
+.reorder-list.is-reordering { user-select: none; -webkit-user-select: none; }
+.reorder-list.is-reordering .reorder-item { transition: transform .12s ease, opacity .12s ease, box-shadow .12s ease; }
+.reorder-list .reorder-item.is-dragging { z-index: 4; opacity: .58; transform: scale(.98); box-shadow: var(--shadow); pointer-events: none; }
+.reorder-list .reorder-item.is-drop-target { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
 
 .toast { position: fixed; z-index: 100; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); left: 16px; max-width: 520px; margin: auto; padding: 12px 15px; border-radius: 13px; color: #fff; background: #282622; box-shadow: var(--shadow); text-align: center; font-weight: 700; }
 .install-screen { display: grid; place-items: center; min-height: 100dvh; padding: max(28px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom)); background: var(--paper); }
@@ -216,7 +230,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  var APP_VERSION = "2.1.1";
+  var APP_VERSION = "2.2.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -435,6 +449,11 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
   function stripMarkdown(source = "") {
     return String(source).replace(/```[^\n]*\n([\s\S]*?)```/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/\{([^{}|]+)\|([^{}]+)\}/g, "$1").replace(/\|([^《》\n|]{1,60})《([^《》\n]{1,60})》/g, "$1").replace(/^(?:\s{0,3}#{1,6}|\s{0,3}>|\s*[-+*]|\s*\d+\.)\s+/gm, "").replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, "").replace(new RegExp("\\*\\*|__|~~|(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)", "g"), "").replace(/\\([\\`*{}\[\]()#+\-.!_>])/g, "$1");
   }
+  function titleFromBody(source = "") {
+    const firstLine = String(source).replace(/\r\n?/g, "\n").split("\n").map((line) => stripMarkdown(line).trim()).find(Boolean) ?? "";
+    const characters = [...firstLine.replace(/\s+/g, " ").trim()];
+    return characters.length > 42 ? `${characters.slice(0, 42).join("")}\u2026` : characters.join("");
+  }
   function countCharacters(source = "") {
     return [...stripMarkdown(source).replace(/[\s\u3000]/gu, "")].length;
   }
@@ -595,6 +614,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       id: createId("doc"),
       title: await uniqueDocumentTitle("\u7121\u984C", target),
       body: "",
+      autoTitle: true,
       type,
       folderId: target,
       color: "gray",
@@ -1599,10 +1619,10 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     root.style.setProperty("--editor-margin", { compact: "12px", standard: "20px", wide: "30px" }[settings.pageMargin] ?? "20px");
     root.style.setProperty("--editor-font", settings.fontFamily === "gothic" ? "var(--font-sans)" : "var(--font-mincho)");
   }
-  function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false } = {}) {
+  function header({ title = "", subtitle = "", back = null, menu = null, extra = "", brand = false, titleAction = null } = {}) {
     return `<header class="app-header ${back ? "has-back" : "no-back"} ${brand ? "brand-header" : ""}">
     ${back ? `<button class="icon-button" data-action="${back}" aria-label="\u623B\u308B">\u2190</button>` : ""}
-    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span class="header-title-main">${escapeHtml(title)}</span><span class="save-state">${escapeHtml(subtitle)}</span></h1>`}
+    ${brand ? `<h1 class="brand">\u61D0\u7D19</h1>` : `<h1 class="header-title"><span class="header-title-main">${titleAction ? `<button class="header-title-button" data-action="${titleAction}" aria-label="\u539F\u7A3F\u540D\u3092\u5909\u66F4">${escapeHtml(title)}</button>` : escapeHtml(title)}</span><span class="save-state">${escapeHtml(subtitle)}</span></h1>`}
     ${extra}
     ${menu ? `<button class="icon-button" data-action="${menu}" aria-label="\u30E1\u30CB\u30E5\u30FC">\u2026</button>` : ""}
   </header>`;
@@ -1740,26 +1760,27 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     ${runtime.updateReady ? `<div class="notice compact"><span>\u65B0\u3057\u3044\u7248\u306E\u61D0\u7D19\u3092\u4F7F\u3048\u307E\u3059</span><button class="small-button" data-action="apply-update">\u66F4\u65B0\u3059\u308B</button><button class="small-button" data-action="dismiss-update">\u3042\u3068\u3067</button></div>` : ""}
     ${reminder ? `<div class="notice compact"><span>\u305D\u308D\u305D\u308D\u66F8\u5EAB\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u308A\u307E\u3059\u304B\uFF1F</span><button class="small-button" data-action="backup-library">\u4ECA\u3064\u304F\u308B</button><button class="small-button" data-action="dismiss-backup">\u4ECA\u65E5\u306F\u9589\u3058\u308B</button></div>` : ""}
 
-    <div class="section-title-row"><h2 class="section-title">\u4ED8\u7B8B</h2>${snapshot.stickies.length > 1 ? '<button class="small-button" data-action="reorder-stickies">\u4E26\u3079\u66FF\u3048</button>' : ""}<button class="small-button" data-action="new-sticky">\uFF0B \u8FFD\u52A0</button></div>
-    ${snapshot.stickies.length ? `<div class="sticky-strip">${snapshot.stickies.map((sticky) => `<button class="sticky-card" style="background:${colorValue(sticky.color)}" data-action="edit-sticky" data-id="${sticky.id}">${escapeHtml(sticky.text)}<time>${formatShortDate(sticky.updatedAt)}</time></button>`).join("")}</div>` : '<div class="empty">\u4ED8\u7B8B\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
+    <div class="section-title-row"><h2 class="section-title">\u4ED8\u7B8B</h2><button class="small-button" data-action="new-sticky">\uFF0B \u8FFD\u52A0</button></div>
+    ${snapshot.stickies.length ? `<div class="sticky-strip reorder-list" data-reorder-store="${STORE_NAMES.stickies}" data-reorder-axis="x">${snapshot.stickies.map((sticky) => `<button class="sticky-card reorder-item" style="background:${colorValue(sticky.color)}" data-action="edit-sticky" data-id="${sticky.id}" data-reorder-id="${sticky.id}">${escapeHtml(sticky.text)}<time>${formatShortDate(sticky.updatedAt)}</time></button>`).join("")}</div>` : '<div class="empty">\u4ED8\u7B8B\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
 
     <div class="section-title-row"><h2 class="section-title">\u6700\u8FD1\u306E\u539F\u7A3F</h2></div>
     ${snapshot.recent.length ? `<div class="list">${snapshot.recent.map((doc) => documentRow(doc, `${pathFor(doc.folderId)} \u30FB ${formatShortDate(doc.updatedAt)}`)).join("")}</div>` : '<div class="empty">\u6700\u8FD1\u306E\u539F\u7A3F\u306F\u307E\u3060\u3042\u308A\u307E\u305B\u3093</div>'}
 
     <div class="section-title-row"><h2 class="section-title">\u30D5\u30A9\u30EB\u30C0</h2><button class="small-button" data-action="new-folder" data-parent-id="">\uFF0B \u4F5C\u6210</button></div>
-    <div class="list home-folder-grid">${snapshot.roots.map((folder) => folderRow(folder, `${snapshot.counts.get(folder.id) ?? 0}\u4EF6`)).join("")}</div>
+    <div class="list home-folder-grid reorder-list" data-reorder-store="${STORE_NAMES.folders}" data-reorder-axis="grid">${snapshot.roots.map((folder) => folderRow(folder, `${snapshot.counts.get(folder.id) ?? 0}\u4EF6`, true)).join("")}</div>
     <button class="fab" data-action="new-document" data-folder-id="${MEMO_FOLDER_ID}" aria-label="\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
   </section>`;
+    bindVisibleReorders();
   }
-  function documentRow(doc, meta = "") {
-    return `<button class="row-button" data-action="open-document" data-id="${doc.id}">
+  function documentRow(doc, meta = "", reorderable = false) {
+    return `<button class="row-button ${reorderable ? "reorder-item" : ""}" data-action="open-document" data-id="${doc.id}" ${reorderable ? `data-reorder-id="${doc.id}"` : ""}>
     <span class="color-bar" style="background:${colorValue(doc.color)}"></span>
     <span class="row-main"><span class="row-title">${escapeHtml(doc.title)}</span><span class="row-meta">${escapeHtml(meta || `${countCharacters(doc.body)}\u5B57 \u30FB ${formatShortDate(doc.updatedAt)}`)}</span></span>
     <span class="chevron">\u203A</span>
   </button>`;
   }
-  function folderRow(folder, meta = "") {
-    return `<button class="row-button" data-action="open-folder" data-id="${folder.id}">
+  function folderRow(folder, meta = "", reorderable = false) {
+    return `<button class="row-button ${reorderable ? "reorder-item" : ""}" data-action="open-folder" data-id="${folder.id}" ${reorderable ? `data-reorder-id="${folder.id}"` : ""}>
     <span class="folder-mark" style="--item-color:${colorValue(folder.color)}"></span>
     <span class="row-main"><span class="row-title">${escapeHtml(folder.name)}</span>${meta ? `<span class="row-meta">${escapeHtml(meta)}</span>` : ""}</span>
     <span class="chevron">\u203A</span>
@@ -1770,11 +1791,157 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     const parentAction = snapshot.folder.parentId ? "folder-back-parent" : "go-home";
     app.innerHTML = `<section class="screen folder-screen">
     ${header({ title: snapshot.folder.name, back: parentAction, menu: "folder-menu" })}
-    ${snapshot.childFolders.length ? `<div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div><div class="list">${snapshot.childFolders.map((folder) => folderRow(folder)).join("")}</div>` : ""}
+    ${snapshot.childFolders.length ? `<div class="section-title-row"><h2 class="section-title">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0</h2></div><div class="list folder-grid reorder-list" data-reorder-store="${STORE_NAMES.folders}" data-reorder-axis="grid">${snapshot.childFolders.map((folder) => folderRow(folder, "", true)).join("")}</div>` : ""}
     <div class="section-title-row"><h2 class="section-title">\u539F\u7A3F</h2></div>
-    ${snapshot.documents.length ? `<div class="list">${snapshot.documents.map((doc) => documentRow(doc)).join("")}</div>` : `<div class="empty">\u307E\u3060\u539F\u7A3F\u304C\u3042\u308A\u307E\u305B\u3093<br><button class="button primary" style="margin-top:12px" data-action="new-document" data-folder-id="${folderId}">\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F</button></div>`}
+    ${snapshot.documents.length ? `<div class="list reorder-list" data-reorder-store="${STORE_NAMES.documents}" data-reorder-axis="y">${snapshot.documents.map((doc) => documentRow(doc, "", true)).join("")}</div>` : `<div class="empty">\u307E\u3060\u539F\u7A3F\u304C\u3042\u308A\u307E\u305B\u3093<br><button class="button primary" style="margin-top:12px" data-action="new-document" data-folder-id="${folderId}">\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F</button></div>`}
     <button class="fab" data-action="new-document" data-folder-id="${folderId}" aria-label="\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u306B\u65B0\u3057\u3044\u539F\u7A3F\u3092\u66F8\u304F">\u270E</button>
   </section>`;
+    bindVisibleReorders();
+  }
+  function bindVisibleReorders() {
+    app.querySelectorAll(".reorder-list[data-reorder-store]").forEach(bindLongPressReorder);
+  }
+  function bindLongPressReorder(container) {
+    let timer = null;
+    let activeItem = null;
+    let touchId = null;
+    let startX = 0;
+    let startY = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let initialOrder = [];
+    let suppressClickUntil = 0;
+    const itemFor = (target) => target instanceof Element ? target.closest(".reorder-item[data-reorder-id]") : null;
+    const clearPending = () => {
+      clearTimeout(timer);
+      timer = null;
+    };
+    const begin = (item, x, y) => {
+      if (!item || item.parentElement !== container) return;
+      activeItem = item;
+      lastX = x;
+      lastY = y;
+      initialOrder = [...container.querySelectorAll(":scope > .reorder-item")].map((node) => node.dataset.reorderId);
+      container.classList.add("is-reordering");
+      item.classList.add("is-dragging");
+      suppressClickUntil = Date.now() + 900;
+      navigator.vibrate?.(18);
+    };
+    const reorderAt = (x, y) => {
+      if (!activeItem) return;
+      lastX = x;
+      lastY = y;
+      container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
+      const target = itemFor(document.elementFromPoint(x, y));
+      if (!target || target === activeItem || target.parentElement !== container) return;
+      target.classList.add("is-drop-target");
+      const rect = target.getBoundingClientRect();
+      const axis = container.dataset.reorderAxis;
+      let before;
+      if (axis === "x") before = x < rect.left + rect.width / 2;
+      else if (axis === "y") before = y < rect.top + rect.height / 2;
+      else {
+        const sameRow = y >= rect.top && y <= rect.bottom;
+        before = sameRow ? x < rect.left + rect.width / 2 : y < rect.top + rect.height / 2;
+      }
+      container.insertBefore(activeItem, before ? target : target.nextSibling);
+    };
+    const finish = async () => {
+      clearPending();
+      if (!activeItem) return;
+      activeItem.classList.remove("is-dragging");
+      container.classList.remove("is-reordering");
+      container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
+      const ids = [...container.querySelectorAll(":scope > .reorder-item")].map((node) => node.dataset.reorderId);
+      activeItem = null;
+      touchId = null;
+      if (ids.join("\n") === initialOrder.join("\n")) return;
+      try {
+        await reorderItems(container.dataset.reorderStore, ids);
+        showToast("\u4E26\u3073\u9806\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002");
+      } catch (error) {
+        showErrorSheet("\u4E26\u3073\u9806\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F", error);
+      }
+    };
+    const cancel = () => {
+      clearPending();
+      if (!activeItem) return;
+      activeItem.classList.remove("is-dragging");
+      container.classList.remove("is-reordering");
+      container.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
+      activeItem = null;
+      touchId = null;
+    };
+    container.addEventListener("click", (event) => {
+      if (Date.now() < suppressClickUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    container.addEventListener("contextmenu", (event) => {
+      if (activeItem || timer) event.preventDefault();
+    });
+    container.addEventListener("touchstart", (event) => {
+      if (event.touches.length !== 1) return;
+      const item = itemFor(event.target);
+      if (!item || item.parentElement !== container) return;
+      const touch = event.touches[0];
+      touchId = touch.identifier;
+      startX = lastX = touch.clientX;
+      startY = lastY = touch.clientY;
+      clearPending();
+      timer = setTimeout(() => begin(item, lastX, lastY), 480);
+    }, { passive: true });
+    container.addEventListener("touchmove", (event) => {
+      const touch = Array.from(event.touches).find((candidate) => candidate.identifier === touchId);
+      if (!touch) return;
+      lastX = touch.clientX;
+      lastY = touch.clientY;
+      if (!activeItem && Math.hypot(lastX - startX, lastY - startY) > 9) {
+        clearPending();
+        touchId = null;
+        return;
+      }
+      if (activeItem) {
+        event.preventDefault();
+        reorderAt(lastX, lastY);
+      }
+    }, { passive: false });
+    container.addEventListener("touchend", (event) => {
+      if (touchId === null) return;
+      if (activeItem) {
+        event.preventDefault();
+        finish();
+      } else {
+        clearPending();
+        touchId = null;
+      }
+    }, { passive: false });
+    container.addEventListener("touchcancel", cancel, { passive: true });
+    container.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      const item = itemFor(event.target);
+      if (!item || item.parentElement !== container) return;
+      startX = lastX = event.clientX;
+      startY = lastY = event.clientY;
+      clearPending();
+      timer = setTimeout(() => begin(item, lastX, lastY), 420);
+    });
+    window.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse") return;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      if (!activeItem && timer && Math.hypot(lastX - startX, lastY - startY) > 8) clearPending();
+      if (activeItem) {
+        event.preventDefault();
+        reorderAt(lastX, lastY);
+      }
+    });
+    window.addEventListener("pointerup", (event) => {
+      if (event.pointerType !== "mouse") return;
+      if (activeItem) finish();
+      else clearPending();
+    });
   }
   function currentEditorSnapshot() {
     const textarea = document.querySelector("#editor");
@@ -1815,7 +1982,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (!previous) undoManager.clear();
     const toolbar = doc.type === "markdown" ? `${historyToolButton("undo")}${historyToolButton("redo")}${toolButton("markdown-menu", "MD", "Markdown\u306E\u8A18\u6CD5")}` : `${historyToolButton("undo")}${historyToolButton("redo")}`;
     app.innerHTML = `<section class="screen editor-screen">
-    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button>' })}
+    ${header({ title: doc.title, subtitle: "\u4FDD\u5B58\u6E08\u307F", back: "editor-back", menu: "document-menu", titleAction: "edit-document-title", extra: '<button class="icon-button" data-action="editor-new-document" aria-label="\u65B0\u3057\u3044\u539F\u7A3F">\u270E</button>' })}
     <div id="save-error-slot"></div>
     <div class="editor-wrap">
       ${runtime.editor.searchOpen ? searchPanel() : ""}
@@ -1866,7 +2033,10 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         performUndo(event.shiftKey ? "redo" : "undo");
       }
     });
-    textarea.addEventListener("focus", () => setTimeout(() => scrollEditorCaretIntoView(textarea), 80), { once: true });
+    textarea.addEventListener("focus", () => {
+      setTimeout(() => scrollEditorCaretIntoView(textarea), 100);
+      setTimeout(() => scrollEditorCaretIntoView(textarea), 320);
+    });
     document.querySelector(".editor-toolbar")?.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) event.preventDefault();
     });
@@ -1880,7 +2050,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     }, 10 * 60 * 1e3);
     requestAnimationFrame(() => {
       if (runtime.editor.scrollLine > 0) scrollEditorToSourceLine(textarea, runtime.editor.scrollLine);
-      if (runtime.route.focus) textarea.focus();
+      if (runtime.route.focus) textarea.focus({ preventScroll: true });
     });
     if (runtime.editor.searchOpen) bindSearchPanel();
     bindEditorViewport();
@@ -1890,21 +2060,31 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     stopEditorViewportSync();
     document.body.classList.add("editor-open");
     const viewport = window.visualViewport;
-    const fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
-    const updateHeight = () => {
+    let fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
+    let frame = 0;
+    const updateHeightNow = () => {
       const height = viewport?.height ?? window.innerHeight;
-      document.body.classList.toggle("keyboard-open", height < fullHeight - 100);
+      const top = Math.max(0, viewport?.offsetTop ?? 0);
+      const keyboardOpen = height < fullHeight - 100;
+      if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
+      document.body.classList.toggle("keyboard-open", keyboardOpen);
       if (height > 0) document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
-      const textarea = document.querySelector("#editor");
-      if (textarea && document.activeElement === textarea) requestAnimationFrame(() => scrollEditorCaretIntoView(textarea));
+      document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
+    };
+    const updateHeight = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateHeightNow);
     };
     viewport?.addEventListener("resize", updateHeight);
+    viewport?.addEventListener("scroll", updateHeight);
     window.addEventListener("resize", updateHeight);
     stopEditorViewportSync = () => {
+      cancelAnimationFrame(frame);
       viewport?.removeEventListener("resize", updateHeight);
+      viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
     };
-    updateHeight();
+    updateHeightNow();
   }
   function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
     if (!textarea || textarea.clientHeight <= 0) return;
@@ -2010,11 +2190,21 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (textarea.value === runtime.editor.lastSavedBody) return runtime.editor.document;
     if (!quiet) setSaveState("\u4FDD\u5B58\u4E2D\u2026");
     try {
-      const saved = await saveDocument(runtime.editor.documentId, { body: textarea.value });
+      const current = runtime.editor.document;
+      const usesAutomaticTitle = current.autoTitle === true || current.autoTitle === void 0 && /^\u7121\u984C(?: \d+)?$/.test(current.title);
+      const automaticTitle = usesAutomaticTitle ? titleFromBody(textarea.value) : "";
+      const patch = { body: textarea.value };
+      if (usesAutomaticTitle) {
+        patch.autoTitle = true;
+        if (automaticTitle) patch.title = automaticTitle;
+      }
+      const saved = await saveDocument(runtime.editor.documentId, patch);
       runtime.editor.document = saved;
       runtime.editor.lastSavedBody = saved.body;
       runtime.editor.failedError = null;
       document.querySelector("#save-error-slot")?.replaceChildren();
+      const titleButton = document.querySelector(".header-title-button");
+      if (titleButton) titleButton.textContent = saved.title;
       setSaveState("\u4FDD\u5B58\u6E08\u307F");
       return saved;
     } catch (error) {
@@ -2104,7 +2294,8 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
   function searchPanel() {
     return `<div class="search-panel">
     <div class="search-row"><input id="search-term" class="text-input" type="search" placeholder="\u63A2\u3059\u8A00\u8449" aria-label="\u63A2\u3059\u8A00\u8449"><span id="search-count" class="search-count">0\uFF0F0\u4EF6</span><button class="icon-button" data-action="close-search" aria-label="\u691C\u7D22\u3092\u9589\u3058\u308B">\xD7</button></div>
-    <div class="search-row"><button class="button" data-action="search-prev">\u524D\u3078</button><button class="button" data-action="search-next">\u6B21\u3078</button><button class="button" data-action="show-replace">\u7F6E\u63DB\u3092\u958B\u304F</button></div>
+    <div class="search-row"><button class="button" data-action="search-prev">\u524D\u3078</button><button class="button" data-action="search-next">\u6B21\u3078</button><button id="replace-toggle" class="button" data-action="toggle-replace">\u7F6E\u63DB\u3092\u958B\u304F</button></div>
+    <div id="search-result-preview" class="search-result-preview" role="status" aria-live="polite" hidden></div>
     <div id="replace-row" hidden><div class="search-row"><input id="replace-term" class="text-input" placeholder="\u7F6E\u304D\u63DB\u3048\u5F8C\u306E\u8A00\u8449" aria-label="\u7F6E\u304D\u63DB\u3048\u5F8C\u306E\u8A00\u8449"></div><div class="search-row"><button class="button" data-action="replace-one">\u3053\u306E1\u4EF6\u3092\u7F6E\u63DB</button><button class="button" data-action="replace-all">\u3059\u3079\u3066\u7F6E\u63DB</button></div></div>
   </div>`;
   }
@@ -2132,6 +2323,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     if (runtime.editor.searchIndex >= matches.length) runtime.editor.searchIndex = 0;
     const count = document.querySelector("#search-count");
     if (count) count.textContent = matches.length ? `${runtime.editor.searchIndex + 1}\uFF0F${matches.length}\u4EF6` : "0\uFF0F0\u4EF6";
+    updateSearchResultPreview(textarea.value, term, matches[runtime.editor.searchIndex]);
     if (matches.length) {
       const position = matches[runtime.editor.searchIndex];
       textarea.setSelectionRange(position, position + term.length);
@@ -2141,6 +2333,26 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         searchInput?.focus({ preventScroll: true });
       });
     }
+  }
+  function updateSearchResultPreview(source, term, position) {
+    const preview = document.querySelector("#search-result-preview");
+    if (!preview) return;
+    if (!term) {
+      preview.hidden = true;
+      preview.textContent = "";
+      return;
+    }
+    preview.hidden = false;
+    if (!Number.isFinite(position)) {
+      preview.textContent = "\u4E00\u81F4\u3059\u308B\u8A00\u8449\u306F\u3042\u308A\u307E\u305B\u3093\u3002";
+      return;
+    }
+    const beforeStart = Math.max(0, position - 34);
+    const afterEnd = Math.min(source.length, position + term.length + 48);
+    const before = source.slice(beforeStart, position).replace(/\s+/g, " ");
+    const match = source.slice(position, position + term.length);
+    const after = source.slice(position + term.length, afterEnd).replace(/\s+/g, " ");
+    preview.innerHTML = `${beforeStart > 0 ? "\u2026" : ""}${escapeHtml(before)}<mark>${escapeHtml(match)}</mark>${escapeHtml(after)}${afterEnd < source.length ? "\u2026" : ""}`;
   }
   function moveSearch(direction) {
     if (!runtime.editor?.searchMatches.length) return;
@@ -2230,7 +2442,6 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     openSheet(folder.name, `<p class="row-meta">\u539F\u7A3F${documents.length}\u4EF6\u30FB\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0${childFolders.length}\u4EF6</p><div class="sheet-list">
     ${folder.parentId ? "" : `<button class="menu-button" data-action="new-folder" data-parent-id="${folder.id}">\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u308B</button>`}
     <button class="menu-button" data-action="edit-folder" data-id="${folder.id}">${folder.system ? "\u8272\u3092\u5909\u66F4" : "\u540D\u524D\u30FB\u8272\u3092\u5909\u66F4"}</button>
-    <button class="menu-button" data-action="reorder-folder-items" data-id="${folder.id}">\u4E2D\u8EAB\u3092\u4E26\u3079\u66FF\u3048\u308B</button>
     ${folder.system ? "" : `<button class="menu-button" data-action="move-folder" data-id="${folder.id}">\u30D5\u30A9\u30EB\u30C0\u3092\u79FB\u52D5</button>`}
     <button class="menu-button" data-action="export-folder" data-id="${folder.id}">\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u66F8\u304D\u51FA\u3059<small>\u4E0B\u4F4D\u30D5\u30A9\u30EB\u30C0\u3068\u539F\u7A3F\u3092\u542B\u3080JSON</small></button>
     ${folder.system ? "" : `<button class="menu-button danger" data-action="trash-folder" data-id="${folder.id}">\u30B4\u30DF\u7BB1\u3078\u79FB\u3059</button>`}
@@ -2257,10 +2468,37 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
     <button class="menu-button" data-action="md-h1">\u5927\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B # \u3092\u4ED8\u3051\u308B</small></button>
     <button class="menu-button" data-action="md-h3">\u5C0F\u898B\u51FA\u3057<small>\u884C\u306E\u5148\u982D\u306B ### \u3092\u4ED8\u3051\u308B</small></button>
     <button class="menu-button" data-action="md-bold">\u592A\u5B57</button>
+    <button class="menu-button" data-action="md-italic">\u659C\u4F53<small>\u30D7\u30EC\u30D3\u30E5\u30FC\u3067\u306F\u6587\u5B57\u8272\u3082\u4E00\u6BB5\u8584\u304F\u8868\u793A</small></button>
     <button class="menu-button" data-action="md-strike">\u6253\u3061\u6D88\u3057</button>
     <button class="menu-button" data-action="md-quote">\u5F15\u7528</button>
     <button class="menu-button" data-action="md-rule">\u533A\u5207\u308A\u7DDA</button>
   </div>`);
+  }
+  async function documentTitleForm() {
+    const saved = await saveEditorNow({ quiet: true });
+    if (!saved && runtime.editor?.failedError) return showToast("\u4FDD\u5B58\u3067\u304D\u3066\u3044\u306A\u3044\u305F\u3081\u3001\u539F\u7A3F\u540D\u3092\u5909\u66F4\u3067\u304D\u307E\u305B\u3093\u3002");
+    const document2 = await getDocument(runtime.editor.documentId);
+    openSheet("\u539F\u7A3F\u540D\u3092\u5909\u66F4", `<form id="document-title-form">
+    <label class="field"><span>\u539F\u7A3F\u540D</span><input class="text-input" name="title" required maxlength="120" value="${escapeHtml(document2.title)}"></label>
+    <p class="row-meta">\u3053\u3053\u3067\u540D\u524D\u3092\u5909\u3048\u308B\u3068\u3001\u672C\u6587\u306E1\u884C\u76EE\u304B\u3089\u306E\u81EA\u52D5\u547D\u540D\u306F\u7D42\u4E86\u3057\u307E\u3059\u3002</p>
+    <div class="button-row"><button class="button primary" type="submit">\u5909\u66F4\u3092\u4FDD\u5B58</button><button class="button" type="button" data-sheet-close>\u3084\u3081\u308B</button></div>
+  </form>`);
+    const input = sheet.querySelector('[name="title"]');
+    setTimeout(() => {
+      input?.focus();
+      input?.select();
+    }, 0);
+    sheet.querySelector("#document-title-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
+      if (!title) return;
+      const updated = await saveDocument(document2.id, { title, autoTitle: false });
+      runtime.editor.document = updated;
+      const titleButton = document.querySelector(".header-title-button");
+      if (titleButton) titleButton.textContent = updated.title;
+      closeSheet();
+      showToast("\u539F\u7A3F\u540D\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\u3002");
+    });
   }
   function stickyForm(sticky = {}) {
     openSheet(sticky.id ? "\u4ED8\u7B8B\u3092\u7DE8\u96C6" : "\u4ED8\u7B8B\u3092\u8FFD\u52A0", `<form id="sticky-form">
@@ -2387,7 +2625,8 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       const folderId = data.get("folderId");
-      let next = await saveDocument(document2.id, { title: data.get("title"), color: data.get("color") });
+      const submittedTitle = String(data.get("title") ?? "").trim();
+      let next = await saveDocument(document2.id, { title: submittedTitle, color: data.get("color"), autoTitle: submittedTitle === document2.title ? document2.autoTitle : false });
       if (folderId !== document2.folderId) next = await moveDocument(document2.id, folderId);
       runtime.editor.document = next;
       closeSheet();
@@ -2632,6 +2871,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
       }
       if (action === "editor-back") return leaveEditor(runtime.editor.returnRoute || { name: "home" });
       if (action === "document-menu") return showDocumentMenu();
+      if (action === "edit-document-title") return documentTitleForm();
       if (action === "undo" || action === "redo") return performUndo(action);
       if (action === "markdown-menu") return showMarkdownMenu();
       if (action === "md-h1") {
@@ -2706,9 +2946,14 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
         runtime.route.searchOpen = false;
         return renderEditor(runtime.editor.documentId);
       }
-      if (action === "show-replace") {
-        document.querySelector("#replace-row").hidden = false;
-        document.querySelector("#replace-term")?.focus();
+      if (action === "toggle-replace") {
+        const row = document.querySelector("#replace-row");
+        const toggle = document.querySelector("#replace-toggle");
+        if (!row || !toggle) return;
+        row.hidden = !row.hidden;
+        toggle.textContent = row.hidden ? "\u7F6E\u63DB\u3092\u958B\u304F" : "\u7F6E\u63DB\u3092\u9589\u3058\u308B";
+        if (!row.hidden) document.querySelector("#replace-term")?.focus({ preventScroll: true });
+        else document.querySelector("#search-term")?.focus({ preventScroll: true });
         return;
       }
       if (action === "search-prev") return moveSearch(-1);
