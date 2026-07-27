@@ -244,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.2
-  var APP_VERSION = "2.6.2";
+  // 懐紙 2.6.2-diag
+  var APP_VERSION = "2.6.2-diag";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -2143,6 +2143,50 @@ body.is-dragging { cursor: grabbing; }
     bindEditorViewport();
     updateUndoButtons();
   }
+  // ===== ここから診断ブロック（原因特定後にこの関数とDIAG参照を消せば元に戻る） =====
+  var DIAG = { resize: 0, scroll: 0, winResize: 0, settle: 0, commit: 0, reveal: 0, noop: 0, lastCommit: 0, lastSettleTop: -1 };
+  function startViewportDiag(getCommitted) {
+    const screen = document.querySelector(".editor-screen");
+    if (!screen) return () => {};
+    let box = document.querySelector("#vv-diag");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "vv-diag";
+      box.style.cssText = "flex:0 0 auto;padding:5px 7px;font:10px/1.3 ui-monospace,Menlo,monospace;white-space:pre;background:#14130f;color:#7fe3c0;letter-spacing:0;z-index:99;";
+      const header = screen.querySelector(".app-header");
+      if (header && header.nextSibling) screen.insertBefore(box, header.nextSibling);
+      else screen.prepend(box);
+    }
+    let mark = document.querySelector("#vv-mark");
+    if (!mark) {
+      mark = document.createElement("div");
+      mark.id = "vv-mark";
+      mark.style.cssText = "position:fixed;top:0;left:0;right:0;height:8px;background:#e0245e;z-index:9999;pointer-events:none;";
+      document.body.appendChild(mark);
+    }
+    const vp = window.visualViewport;
+    const tick = () => {
+      const cs = getComputedStyle(screen);
+      const r = screen.getBoundingClientRect();
+      const ta = document.querySelector("#editor");
+      const tr = ta ? ta.getBoundingClientRect() : { top: 0, bottom: 0 };
+      box.textContent = [
+        `vv  h=${vp ? vp.height.toFixed(1) : "-"} top=${vp ? vp.offsetTop.toFixed(1) : "-"} pgT=${vp ? vp.pageTop.toFixed(1) : "-"} sc=${vp ? vp.scale.toFixed(2) : "-"}`,
+        `win ih=${window.innerHeight} sy=${window.scrollY} deST=${document.documentElement.scrollTop} bST=${document.body.scrollTop}`,
+        `css top=${cs.top} h=${cs.height} | rect ${r.top.toFixed(1)}..${r.bottom.toFixed(1)}`,
+        `ta  rect ${tr.top.toFixed(1)}..${tr.bottom.toFixed(1)} | commit=${getCommitted()} last=${DIAG.lastCommit}`,
+        `ev  r=${DIAG.resize} s=${DIAG.scroll} wr=${DIAG.winResize} | set=${DIAG.settle} noop=${DIAG.noop} cmt=${DIAG.commit} rev=${DIAG.reveal} sTop=${DIAG.lastSettleTop}`
+      ].join("\n");
+    };
+    tick();
+    const id = setInterval(tick, 100);
+    return () => {
+      clearInterval(id);
+      box.remove();
+      mark.remove();
+    };
+  }
+  // ===== 診断ブロックここまで =====
   function bindEditorViewport() {
     stopEditorViewportSync();
     document.body.classList.add("editor-open");
@@ -2165,15 +2209,20 @@ body.is-dragging { cursor: grabbing; }
     const commitTop = (value) => {
       if (value === committedTop) return;
       committedTop = value;
+      DIAG.commit++;
+      DIAG.lastCommit = value;
       document.documentElement.style.setProperty("--editor-viewport-top", `${value}px`);
     };
     const settleNow = () => {
+      DIAG.settle++;
       const textarea = editorTextarea();
       const offsetTop = currentTop();
+      DIAG.lastSettleTop = offsetTop;
       const wantsReveal = pendingReveal && canReveal(textarea);
       pendingReveal = false;
-      if (offsetTop === committedTop && !wantsReveal) return;
+      if (offsetTop === committedTop && !wantsReveal) { DIAG.noop++; return; }
       if (wantsReveal || (offsetTop > 0 && canReveal(textarea))) {
+        DIAG.reveal++;
         revealEditorCaret(textarea);
         cancelAnimationFrame(settleFrame);
         settleFrame = requestAnimationFrame(() => {
@@ -2214,6 +2263,9 @@ body.is-dragging { cursor: grabbing; }
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(updateNow);
     };
+    const onResize = () => { DIAG.resize++; update(); };
+    const onScroll = () => { DIAG.scroll++; update(); };
+    const onWinResize = () => { DIAG.winResize++; update(); };
     const handleFocusOut = (event) => {
       if (event.target && event.target.id === "editor") scheduleSettle();
     };
@@ -2226,19 +2278,21 @@ body.is-dragging { cursor: grabbing; }
         updateNow();
       }, 320);
     };
-    viewport?.addEventListener("resize", update, { passive: true });
-    viewport?.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
+    viewport?.addEventListener("resize", onResize, { passive: true });
+    viewport?.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onWinResize, { passive: true });
     window.addEventListener("orientationchange", handleOrientation, { passive: true });
     document.addEventListener("focusout", handleFocusOut, true);
+    const stopDiag = startViewportDiag(() => committedTop);
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
       cancelAnimationFrame(settleFrame);
       clearTimeout(settleTimer);
       clearTimeout(orientationTimer);
-      viewport?.removeEventListener("resize", update);
-      viewport?.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      stopDiag();
+      viewport?.removeEventListener("resize", onResize);
+      viewport?.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onWinResize);
       window.removeEventListener("orientationchange", handleOrientation);
       document.removeEventListener("focusout", handleFocusOut, true);
       committedTop = 0;
