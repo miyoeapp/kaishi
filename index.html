@@ -32,7 +32,6 @@
   --editor-font-size: 17px;
   --editor-line-height: 1.9;
   --editor-margin: 20px;
-  --editor-viewport-top: 0px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
@@ -151,10 +150,12 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: translateY(var(--editor-viewport-top, 0px)); will-change: transform; overflow: hidden; overscroll-behavior: none; }
+.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; overflow: hidden; overscroll-behavior: none; }
 .editor-screen .app-header { position: relative; top: auto; z-index: 30; flex: 0 0 auto; gap: 4px; background: var(--paper); backdrop-filter: none; }
 .editor-screen .app-header > .icon-button { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-screen .header-title { min-width: 44px; }
+.folder-screen .app-header.has-back > .icon-button:first-child,
+.preview-screen .app-header.has-back > .icon-button:first-child { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 0; overflow: hidden; overscroll-behavior: none; }
 .editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overflow-anchor: none; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: auto; }
 .editor-header-tools { display: flex; align-items: center; flex: 0 0 auto; gap: 4px; margin-top: 5px; }
@@ -242,8 +243,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.0
-  var APP_VERSION = "2.6.0";
+  // 懐紙 2.6.1
+  var APP_VERSION = "2.6.1";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -2038,7 +2039,6 @@ body.is-dragging { cursor: grabbing; }
     stopEditorViewportSync = () => {
     };
     document.documentElement.style.removeProperty("--editor-viewport-height");
-    document.documentElement.style.removeProperty("--editor-viewport-top");
     document.body.classList.remove("editor-open", "keyboard-open");
     if (!runtime.editor) return;
     clearTimeout(runtime.editor.saveTimer);
@@ -2151,7 +2151,6 @@ body.is-dragging { cursor: grabbing; }
     let previousKeyboardOpen = false;
     let previousHeight = 0;
     let renderedHeight = null;
-    let renderedTop = null;
     const scheduleCaretReveal = (textarea) => {
       clearTimeout(caretTimer);
       caretTimer = setTimeout(() => {
@@ -2162,17 +2161,12 @@ body.is-dragging { cursor: grabbing; }
     };
     const updateHeightNow = () => {
       const height = Math.max(1, Math.round(viewport?.height ?? window.innerHeight));
-      const top = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
       if (height !== renderedHeight) {
         document.documentElement.style.setProperty("--editor-viewport-height", `${height}px`);
         renderedHeight = height;
-      }
-      if (top !== renderedTop) {
-        document.documentElement.style.setProperty("--editor-viewport-top", `${top}px`);
-        renderedTop = top;
       }
       const textarea = document.querySelector("#editor");
       const editorHasFocus = document.activeElement === textarea;
@@ -2188,13 +2182,11 @@ body.is-dragging { cursor: grabbing; }
       frame = requestAnimationFrame(updateHeightNow);
     };
     viewport?.addEventListener("resize", updateHeight, { passive: true });
-    viewport?.addEventListener("scroll", updateHeight, { passive: true });
     window.addEventListener("resize", updateHeight, { passive: true });
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
       clearTimeout(caretTimer);
       viewport?.removeEventListener("resize", updateHeight);
-      viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
     };
     updateHeightNow();
