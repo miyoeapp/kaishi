@@ -244,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.3-diag
-  var APP_VERSION = "2.6.3-diag";
+  // 懐紙 2.6.3
+  var APP_VERSION = "2.6.3";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -2143,45 +2143,6 @@ body.is-dragging { cursor: grabbing; }
     bindEditorViewport();
     updateUndoButtons();
   }
-  // ===== 検証用 計装ブロック（リリース版2.6.3には含まれない） =====
-  var DIAG = { resize: 0, scroll: 0, winResize: 0, settle: 0, commit: 0, reveal: 0, noop: 0, rewind: 0, blocked: 0, lastCommit: 0, lastSettleTop: -1 };
-  function startViewportDiag(getCommitted) {
-    const screen = document.querySelector(".editor-screen");
-    if (!screen) return () => {};
-    let box = document.querySelector("#vv-diag");
-    if (!box) {
-      box = document.createElement("div");
-      box.id = "vv-diag";
-      box.style.cssText = "flex:0 0 auto;padding:5px 7px;font:10px/1.3 ui-monospace,Menlo,monospace;white-space:pre;background:#14130f;color:#7fe3c0;z-index:99;";
-      const header = screen.querySelector(".app-header");
-      if (header && header.nextSibling) screen.insertBefore(box, header.nextSibling);
-      else screen.prepend(box);
-    }
-    let mark = document.querySelector("#vv-mark");
-    if (!mark) {
-      mark = document.createElement("div");
-      mark.id = "vv-mark";
-      mark.style.cssText = "position:fixed;top:0;left:0;right:0;height:8px;background:#e0245e;z-index:9999;pointer-events:none;";
-      document.body.appendChild(mark);
-    }
-    const vp = window.visualViewport;
-    const tick = () => {
-      const cs = getComputedStyle(screen);
-      const r = screen.getBoundingClientRect();
-      const sy = window.scrollY || document.documentElement.scrollTop || 0;
-      box.textContent = [
-        `vv  h=${vp ? vp.height.toFixed(1) : "-"} top=${vp ? vp.offsetTop.toFixed(1) : "-"} pgT=${vp ? vp.pageTop.toFixed(1) : "-"}`,
-        `win ih=${window.innerHeight} sy=${sy} deST=${document.documentElement.scrollTop}`,
-        `css top=${cs.top} h=${cs.height} | rect ${r.top.toFixed(1)}..${r.bottom.toFixed(1)}`,
-        `commit=${getCommitted()} last=${DIAG.lastCommit} | rw=${DIAG.rewind} blk=${DIAG.blocked}`,
-        `ev r=${DIAG.resize} s=${DIAG.scroll} | set=${DIAG.settle} noop=${DIAG.noop} cmt=${DIAG.commit} rev=${DIAG.reveal} sTop=${DIAG.lastSettleTop}`
-      ].join("\n");
-    };
-    tick();
-    const id = setInterval(tick, 100);
-    return () => { clearInterval(id); box.remove(); mark.remove(); };
-  }
-  // ===== 計装ブロックここまで =====
   function bindEditorViewport() {
     stopEditorViewportSync();
     document.body.classList.add("editor-open");
@@ -2206,7 +2167,6 @@ body.is-dragging { cursor: grabbing; }
     const commitTop = (value) => {
       if (value === committedTop) return;
       committedTop = value;
-      DIAG.commit++; DIAG.lastCommit = value;
       document.documentElement.style.setProperty("--editor-viewport-top", `${value}px`);
     };
     // --- 指示C: ドキュメントスクロール型「逃げ」の判定 ---
@@ -2222,7 +2182,6 @@ body.is-dragging { cursor: grabbing; }
     };
     // 巻き戻し＋誤爆コミットの後始末。指が触れている間は失敗しうるのでリトライ扱い（エラーにしない）
     const recoverFromDocScroll = () => {
-      DIAG.rewind++;
       if (committedTop !== 0) commitTop(0);
       if (!resetDocScroll()) return false;
       const textarea = editorTextarea();
@@ -2230,29 +2189,24 @@ body.is-dragging { cursor: grabbing; }
       return true;
     };
     const settleNow = () => {
-      DIAG.settle++;
       // 指示C: scrollY>0 の間は offsetTop をパンと解釈しない。幾何情報も根拠にしない
       if (isDocScrolled()) {
-        DIAG.blocked++;
         pendingReveal = false;
         recoverFromDocScroll();
         return;
       }
       // 指示C補助: レイアウトビューポート縮小の痕跡が残る間はコミット禁止
       if (isLayoutShrunk()) {
-        DIAG.blocked++;
         pendingReveal = false;
         if (committedTop !== 0) commitTop(0);
         return;
       }
       const textarea = editorTextarea();
       const offsetTop = currentTop();
-      DIAG.lastSettleTop = offsetTop;
       const wantsReveal = pendingReveal && canReveal(textarea);
       pendingReveal = false;
-      if (offsetTop === committedTop && !wantsReveal) { DIAG.noop++; return; }
+      if (offsetTop === committedTop && !wantsReveal) return;
       if (wantsReveal || (offsetTop > 0 && canReveal(textarea))) {
-        DIAG.reveal++;
         revealEditorCaret(textarea);
         cancelAnimationFrame(settleFrame);
         settleFrame = requestAnimationFrame(() => {
@@ -2325,11 +2279,6 @@ body.is-dragging { cursor: grabbing; }
     window.addEventListener("resize", update, { passive: true });
     window.addEventListener("orientationchange", handleOrientation, { passive: true });
     window.addEventListener("scroll", onDocScroll, { passive: true });
-    const stopDiag = startViewportDiag(() => committedTop);
-    const onVvResize = () => { DIAG.resize++; };
-    const onVvScroll = () => { DIAG.scroll++; };
-    viewport?.addEventListener("resize", onVvResize, { passive: true });
-    viewport?.addEventListener("scroll", onVvScroll, { passive: true });
     document.addEventListener("touchend", onGestureEnd, { passive: true });
     document.addEventListener("touchcancel", onGestureEnd, { passive: true });
     document.addEventListener("pointerup", onGestureEnd, { passive: true });
@@ -2346,9 +2295,6 @@ body.is-dragging { cursor: grabbing; }
       window.removeEventListener("resize", update);
       window.removeEventListener("orientationchange", handleOrientation);
       window.removeEventListener("scroll", onDocScroll);
-      stopDiag();
-      viewport?.removeEventListener("resize", onVvResize);
-      viewport?.removeEventListener("scroll", onVvScroll);
       document.removeEventListener("touchend", onGestureEnd);
       document.removeEventListener("touchcancel", onGestureEnd);
       document.removeEventListener("pointerup", onGestureEnd);
