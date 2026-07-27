@@ -15,6 +15,7 @@
   <link rel="icon" href="./kaishi-icon.png">
   <style>
 :root {
+  --editor-viewport-top: 0px;
   --paper: #f5f2eb;
   --paper-deep: #e9e6df;
   --surface: #fffefa;
@@ -150,7 +151,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: 0; right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; overflow: hidden; overscroll-behavior: none; }
+.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; overflow: hidden; overscroll-behavior: none; }
 .editor-screen .app-header { position: relative; top: auto; z-index: 30; flex: 0 0 auto; gap: 4px; background: var(--paper); backdrop-filter: none; }
 .editor-screen .app-header > .icon-button { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-screen .header-title { min-width: 44px; }
@@ -243,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.1
-  var APP_VERSION = "2.6.1";
+  // 懐紙 2.6.2
+  var APP_VERSION = "2.6.2";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -2039,6 +2040,7 @@ body.is-dragging { cursor: grabbing; }
     stopEditorViewportSync = () => {
     };
     document.documentElement.style.removeProperty("--editor-viewport-height");
+    document.documentElement.style.removeProperty("--editor-viewport-top");
     document.body.classList.remove("editor-open", "keyboard-open");
     if (!runtime.editor) return;
     clearTimeout(runtime.editor.saveTimer);
@@ -2145,22 +2147,49 @@ body.is-dragging { cursor: grabbing; }
     stopEditorViewportSync();
     document.body.classList.add("editor-open");
     const viewport = window.visualViewport;
+    const SETTLE_DELAY = 150;
     let fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
     let frame = 0;
-    let caretTimer = 0;
+    let settleFrame = 0;
+    let settleTimer = 0;
+    let orientationTimer = 0;
     let previousKeyboardOpen = false;
     let previousHeight = 0;
+    let previousTop = -1;
     let renderedHeight = null;
-    const scheduleCaretReveal = (textarea) => {
-      clearTimeout(caretTimer);
-      caretTimer = setTimeout(() => {
-        if (document.activeElement === textarea && textarea.selectionStart === textarea.selectionEnd) {
-          revealEditorCaret(textarea);
-        }
-      }, 140);
+    let committedTop = 0;
+    let pendingReveal = false;
+    const editorTextarea = () => document.querySelector("#editor");
+    const currentTop = () => Math.max(0, Math.round(viewport?.offsetTop ?? 0));
+    const canReveal = (textarea) => !!textarea && document.activeElement === textarea && textarea.selectionStart === textarea.selectionEnd;
+    const commitTop = (value) => {
+      if (value === committedTop) return;
+      committedTop = value;
+      document.documentElement.style.setProperty("--editor-viewport-top", `${value}px`);
     };
-    const updateHeightNow = () => {
+    const settleNow = () => {
+      const textarea = editorTextarea();
+      const offsetTop = currentTop();
+      const wantsReveal = pendingReveal && canReveal(textarea);
+      pendingReveal = false;
+      if (offsetTop === committedTop && !wantsReveal) return;
+      if (wantsReveal || (offsetTop > 0 && canReveal(textarea))) {
+        revealEditorCaret(textarea);
+        cancelAnimationFrame(settleFrame);
+        settleFrame = requestAnimationFrame(() => {
+          commitTop(currentTop());
+        });
+        return;
+      }
+      commitTop(offsetTop);
+    };
+    const scheduleSettle = () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(settleNow, SETTLE_DELAY);
+    };
+    const updateNow = () => {
       const height = Math.max(1, Math.round(viewport?.height ?? window.innerHeight));
+      const offsetTop = currentTop();
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
@@ -2168,28 +2197,54 @@ body.is-dragging { cursor: grabbing; }
         document.documentElement.style.setProperty("--editor-viewport-height", `${height}px`);
         renderedHeight = height;
       }
-      const textarea = document.querySelector("#editor");
-      const editorHasFocus = document.activeElement === textarea;
+      const textarea = editorTextarea();
       const viewportChanged = previousHeight > 0 && height !== previousHeight;
-      if (editorHasFocus && keyboardOpen && (!previousKeyboardOpen || viewportChanged)) {
-        scheduleCaretReveal(textarea);
+      if (keyboardOpen && (!previousKeyboardOpen || viewportChanged) && canReveal(textarea)) {
+        revealEditorCaret(textarea);
+        pendingReveal = true;
+      }
+      if (height !== previousHeight || offsetTop !== previousTop || (previousKeyboardOpen && !keyboardOpen)) {
+        scheduleSettle();
       }
       previousKeyboardOpen = keyboardOpen;
       previousHeight = height;
+      previousTop = offsetTop;
     };
-    const updateHeight = () => {
+    const update = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateHeightNow);
+      frame = requestAnimationFrame(updateNow);
     };
-    viewport?.addEventListener("resize", updateHeight, { passive: true });
-    window.addEventListener("resize", updateHeight, { passive: true });
+    const handleFocusOut = (event) => {
+      if (event.target && event.target.id === "editor") scheduleSettle();
+    };
+    const handleOrientation = () => {
+      clearTimeout(orientationTimer);
+      orientationTimer = setTimeout(() => {
+        if (document.activeElement === editorTextarea()) return;
+        fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
+        previousHeight = 0;
+        updateNow();
+      }, 320);
+    };
+    viewport?.addEventListener("resize", update, { passive: true });
+    viewport?.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("orientationchange", handleOrientation, { passive: true });
+    document.addEventListener("focusout", handleFocusOut, true);
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
-      clearTimeout(caretTimer);
-      viewport?.removeEventListener("resize", updateHeight);
-      window.removeEventListener("resize", updateHeight);
+      cancelAnimationFrame(settleFrame);
+      clearTimeout(settleTimer);
+      clearTimeout(orientationTimer);
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", handleOrientation);
+      document.removeEventListener("focusout", handleFocusOut, true);
+      committedTop = 0;
+      document.documentElement.style.setProperty("--editor-viewport-top", "0px");
     };
-    updateHeightNow();
+    updateNow();
   }
   function editorCaretMetrics(textarea, position = textarea.selectionStart) {
     if (!textarea || textarea.clientHeight <= 0) return null;
@@ -2234,10 +2289,10 @@ body.is-dragging { cursor: grabbing; }
     const paddingTop = parseFloat(style.paddingTop || "0");
     const paddingBottom = parseFloat(style.paddingBottom || "0");
     const safeTop = textarea.scrollTop + paddingTop + 12;
-    const safeBottom = textarea.scrollTop + textarea.clientHeight - paddingBottom - 22;
+    const safeBottom = textarea.scrollTop + textarea.clientHeight - paddingBottom - 48;
     let next = textarea.scrollTop;
     if (caret.top < safeTop) next = caret.top - paddingTop - 12;
-    else if (caret.top + caret.height > safeBottom) next = caret.top + caret.height - textarea.clientHeight + paddingBottom + 22;
+    else if (caret.top + caret.height > safeBottom) next = caret.top + caret.height - textarea.clientHeight + paddingBottom + 48;
     textarea.scrollTop = Math.max(0, Math.min(next, textarea.scrollHeight - textarea.clientHeight));
   }
   function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
