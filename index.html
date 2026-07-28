@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#F5F2EB">
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex, nofollow, noarchive">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self'">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="懐紙">
@@ -244,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.4
-  var APP_VERSION = "2.6.4";
+  // 懐紙 2.7.0
+  var APP_VERSION = "2.7.0";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -1737,7 +1737,7 @@ body.is-dragging { cursor: grabbing; }
   </section>`;
   }
   async function boot() {
-    await removeLegacyOfflineShell();
+    await registerOfflineShell();
     if (!isStandalone()) {
       renderInstall();
       return;
@@ -1757,16 +1757,35 @@ body.is-dragging { cursor: grabbing; }
     }
     await renderHome();
   }
-  async function removeLegacyOfflineShell() {
+  async function registerOfflineShell() {
+    if (!("serviceWorker" in navigator)) return;
+    let reloadingForUpdate = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!runtime.updating || reloadingForUpdate) return;
+      reloadingForUpdate = true;
+      location.reload();
+    });
     try {
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-      }
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.filter((key) => key.startsWith("kaishi-shell-")).map((key) => caches.delete(key)));
-      }
+      const registration = await navigator.serviceWorker.register("./service-worker.js", {
+        scope: "./",
+        updateViaCache: "none"
+      });
+      runtime.updateRegistration = registration;
+      const markUpdateReady = () => {
+        if (!registration.waiting || !navigator.serviceWorker.controller) return;
+        runtime.updateReady = true;
+        if (runtime.guard && runtime.route.name === "home") renderHome();
+      };
+      markUpdateReady();
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener("statechange", () => {
+          if (installing.state === "installed") queueMicrotask(markUpdateReady);
+        });
+      });
+      if (navigator.onLine) registration.update().catch(() => {
+      });
     } catch {
     }
   }
@@ -3460,6 +3479,8 @@ body.is-dragging { cursor: grabbing; }
   });
   window.addEventListener("online", () => {
     runtime.online = true;
+    runtime.updateRegistration?.update().catch(() => {
+    });
     if (runtime.route.name === "home") renderHome();
   });
   window.addEventListener("offline", () => {
