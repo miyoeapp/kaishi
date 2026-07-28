@@ -244,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.6.4
-  var APP_VERSION = "2.6.4";
+  // 懐紙 2.6.5
+  var APP_VERSION = "2.6.5";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -2148,6 +2148,8 @@ body.is-dragging { cursor: grabbing; }
     document.body.classList.add("editor-open");
     const viewport = window.visualViewport;
     const SETTLE_DELAY = 150;
+    // 指示1-1(v4): 縮小方向の高さ反映を、iOSのキーボードアニメーション完了まで遅らせる
+    const KEYBOARD_ANIM_DELAY_MS = 280;
     let fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
     let frame = 0;
     let settleFrame = 0;
@@ -2155,6 +2157,9 @@ body.is-dragging { cursor: grabbing; }
     let orientationTimer = 0;
     let scrollFrame = 0;
     let rewindTimer = 0;
+    let heightTimer = 0;
+    let heightRevealFrame = 0;
+    let pendingHeight = null;
     let previousKeyboardOpen = false;
     let previousHeight = 0;
     let previousTop = -1;
@@ -2164,6 +2169,46 @@ body.is-dragging { cursor: grabbing; }
     const editorTextarea = () => document.querySelector("#editor");
     const currentTop = () => Math.max(0, Math.round(viewport?.offsetTop ?? 0));
     const canReveal = (textarea) => !!textarea && document.activeElement === textarea && textarea.selectionStart === textarea.selectionEnd;
+    // --- 指示1(v4): 高さ反映の遅延コミット ---
+    const writeHeight = (value) => {
+      if (value === renderedHeight) return;
+      document.documentElement.style.setProperty("--editor-viewport-height", `${value}px`);
+      renderedHeight = value;
+    };
+    // 指示1-4: 縮小コミットの直後（次フレーム）にキャレットを1回可視化する
+    const revealAfterShrink = () => {
+      cancelAnimationFrame(heightRevealFrame);
+      heightRevealFrame = requestAnimationFrame(() => {
+        if (!document.body.classList.contains("keyboard-open")) return;
+        const textarea = editorTextarea();
+        if (canReveal(textarea) && !isDocScrolled()) revealEditorCaret(textarea);
+      });
+    };
+    const cancelPendingShrink = () => {
+      clearTimeout(heightTimer);
+      heightTimer = 0;
+      pendingHeight = null;
+    };
+    // 指示1-2: 保留は常に最新の1件のみ。拡大が来たら保留を捨てて即時反映
+    const applyHeight = (value) => {
+      if (renderedHeight === null) { writeHeight(value); return; }
+      if (value >= renderedHeight) {
+        cancelPendingShrink();
+        writeHeight(value);
+        return;
+      }
+      if (pendingHeight === value && heightTimer) return;
+      clearTimeout(heightTimer);
+      pendingHeight = value;
+      heightTimer = setTimeout(() => {
+        heightTimer = 0;
+        const target = pendingHeight;
+        pendingHeight = null;
+        if (target === null) return;
+        writeHeight(target);
+        revealAfterShrink();
+      }, KEYBOARD_ANIM_DELAY_MS);
+    };
     const commitTop = (value) => {
       if (value === committedTop) return;
       committedTop = value;
@@ -2225,11 +2270,9 @@ body.is-dragging { cursor: grabbing; }
       const offsetTop = currentTop();
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
+      // 指示1-3: keyboardOpen判定・クラス・静定機構への入力は遅延前の生の値を使う
       document.body.classList.toggle("keyboard-open", keyboardOpen);
-      if (height !== renderedHeight) {
-        document.documentElement.style.setProperty("--editor-viewport-height", `${height}px`);
-        renderedHeight = height;
-      }
+      applyHeight(height);
       const textarea = editorTextarea();
       const viewportChanged = previousHeight > 0 && height !== previousHeight;
       // 指示5撤回(v3): 即時実行はせず、静定後の1回に集約する
@@ -2287,9 +2330,11 @@ body.is-dragging { cursor: grabbing; }
       cancelAnimationFrame(frame);
       cancelAnimationFrame(settleFrame);
       cancelAnimationFrame(scrollFrame);
+      cancelAnimationFrame(heightRevealFrame);
       clearTimeout(settleTimer);
       clearTimeout(orientationTimer);
       clearTimeout(rewindTimer);
+      clearTimeout(heightTimer);
       viewport?.removeEventListener("resize", update);
       viewport?.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
