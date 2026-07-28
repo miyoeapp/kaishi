@@ -15,6 +15,7 @@
   <link rel="icon" href="./kaishi-icon.png">
   <style>
 :root {
+  --editor-viewport-top: 0px;
   --paper: #f5f2eb;
   --paper-deep: #e9e6df;
   --surface: #fffefa;
@@ -32,7 +33,6 @@
   --editor-font-size: 17px;
   --editor-line-height: 1.9;
   --editor-margin: 20px;
-  --editor-viewport-top: 0px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
@@ -126,9 +126,9 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 
 .fab { position: fixed; right: max(20px, calc((100vw - 720px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 25; width: 62px; height: 62px; border: 0; border-radius: 50%; color: #fff; background: var(--accent); box-shadow: var(--shadow); font-size: 27px; }
 
-.sheet { position: fixed; top: var(--sheet-top, 14dvh); right: 0; bottom: auto; left: 0; width: min(100%, 720px); height: var(--sheet-height, 86dvh); max-height: none; margin: 0 auto; padding: 0; border: 0; border-radius: 24px 24px 0 0; color: var(--ink); background: var(--paper); box-shadow: 0 -12px 42px rgb(0 0 0 / 20%); }
+.sheet { position: fixed; top: 0; right: 0; bottom: auto; left: 0; width: min(100%, 720px); height: var(--sheet-height, 86dvh); max-height: none; margin: 0 auto; padding: 0; border: 0; border-radius: 24px 24px 0 0; color: var(--ink); background: var(--paper); box-shadow: 0 -12px 42px rgb(0 0 0 / 20%); transform: translateY(var(--sheet-top, 14dvh)); will-change: transform; }
 .sheet::backdrop { background: rgb(20 18 15 / 38%); backdrop-filter: blur(2px); }
-.sheet[open] { animation: sheet-in .18s ease-out; }
+.sheet[open] .sheet-inner { animation: sheet-in .18s ease-out; }
 @keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
 .sheet-inner { height: 100%; max-height: none; padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: none; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .sheet-handle { width: 42px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--border); }
@@ -151,10 +151,12 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .segmented button { min-height: 46px; padding: 8px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .segmented button.selected { color: #fff; border-color: var(--accent); background: var(--accent); }
 
-.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; transform: none; overflow: hidden; overscroll-behavior: none; }
+.editor-screen { position: fixed; top: var(--editor-viewport-top, 0px); right: 0; left: 0; display: flex; flex-direction: column; width: min(100%, 720px); height: var(--editor-viewport-height, 100dvh); min-height: 0; margin: 0 auto; overflow: hidden; overscroll-behavior: none; }
 .editor-screen .app-header { position: relative; top: auto; z-index: 30; flex: 0 0 auto; gap: 4px; background: var(--paper); backdrop-filter: none; }
 .editor-screen .app-header > .icon-button { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-screen .header-title { min-width: 44px; }
+.folder-screen .app-header.has-back > .icon-button:first-child,
+.preview-screen .app-header.has-back > .icon-button:first-child { flex: 0 0 40px; width: 40px; height: 40px; margin-top: 5px; border-radius: 13px; }
 .editor-wrap { position: relative; display: flex; flex: 1 1 auto; min-height: 0; padding-bottom: 0; overflow: hidden; overscroll-behavior: none; }
 .editor { display: block; width: 100%; height: 100%; min-height: 0; padding: 16px var(--editor-margin) 34px; overflow-y: auto; overflow-anchor: none; overscroll-behavior: none; border: 0; border-radius: 0; color: var(--ink); background: var(--surface); caret-color: var(--accent); font-family: var(--editor-font, var(--font-mincho)); font-size: var(--editor-font-size); line-height: var(--editor-line-height); resize: none; outline: none; tab-size: 2; touch-action: auto; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; -webkit-overflow-scrolling: auto; }
 .editor-header-tools { display: flex; align-items: center; flex: 0 0 auto; gap: 4px; margin-top: 5px; }
@@ -203,7 +205,7 @@ body.keyboard-open .screen.editor-screen { padding-bottom: 0; }
 .drag-ghost { position: fixed !important; z-index: 120; margin: 0 !important; opacity: .68; transform: scale(1.025); transform-origin: center; box-shadow: 0 14px 38px rgb(44 41 36 / 24%); pointer-events: none !important; user-select: none; -webkit-user-select: none; transition: none !important; }
 body.is-dragging { cursor: grabbing; }
 
-.sheet.compact-sheet { top: var(--sheet-top, auto); height: var(--sheet-height, auto); max-height: calc(100dvh - 12px); }
+.sheet.compact-sheet { top: 0; height: var(--sheet-height, auto); max-height: calc(100dvh - 12px); }
 .sheet.compact-sheet .sheet-inner { height: auto; max-height: var(--sheet-height, calc(100dvh - 12px)); }
 
 .toast { position: fixed; z-index: 100; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); left: 16px; max-width: 520px; margin: auto; padding: 12px 15px; border-radius: 13px; color: #fff; background: #282622; box-shadow: var(--shadow); text-align: center; font-weight: 700; }
@@ -242,8 +244,8 @@ body.is-dragging { cursor: grabbing; }
 (() => {
   // src/constants.js
   var APP_NAME = "\u61D0\u7D19";
-  // 懐紙 2.5.0
-  var APP_VERSION = "2.5.0";
+  // 懐紙 2.6.4
+  var APP_VERSION = "2.6.4";
   var SCHEMA_VERSION = 1;
   var DB_NAME = "kaishi-library";
   var DB_VERSION = 1;
@@ -1684,25 +1686,41 @@ body.is-dragging { cursor: grabbing; }
   function bindSheetViewport({ compact = false } = {}) {
     stopSheetViewportSync();
     const viewport = window.visualViewport;
+    let frame = 0;
+    let lastTop = null;
+    let lastHeight = null;
     const update = () => {
-      const height = viewport?.height ?? window.innerHeight;
-      const top = viewport?.offsetTop ?? 0;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateNow);
+    };
+    const updateNow = () => {
+      const height = Math.max(1, Math.round(viewport?.height ?? window.innerHeight));
+      const top = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
       const contentHeight = sheet.querySelector(".sheet-inner")?.scrollHeight ?? 0;
       const panelHeight = compact
         ? Math.min(height - 12, Math.max(340, contentHeight))
         : Math.min(760, Math.max(280, height * 0.86));
-      sheet.style.setProperty("--sheet-top", `${Math.round(Math.max(0, top + height - panelHeight))}px`);
-      sheet.style.setProperty("--sheet-height", `${Math.round(panelHeight)}px`);
+      const nextTop = Math.round(Math.max(0, top + height - panelHeight));
+      const nextHeight = Math.round(panelHeight);
+      if (nextTop !== lastTop) {
+        sheet.style.setProperty("--sheet-top", `${nextTop}px`);
+        lastTop = nextTop;
+      }
+      if (nextHeight !== lastHeight) {
+        sheet.style.setProperty("--sheet-height", `${nextHeight}px`);
+        lastHeight = nextHeight;
+      }
     };
-    viewport?.addEventListener("resize", update);
-    viewport?.addEventListener("scroll", update);
-    window.addEventListener("resize", update);
+    viewport?.addEventListener("resize", update, { passive: true });
+    viewport?.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
     stopSheetViewportSync = () => {
+      cancelAnimationFrame(frame);
       viewport?.removeEventListener("resize", update);
       viewport?.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-    update();
+    updateNow();
   }
   function renderInstall() {
     app.innerHTML = `<section class="install-screen">
@@ -2129,43 +2147,162 @@ body.is-dragging { cursor: grabbing; }
     stopEditorViewportSync();
     document.body.classList.add("editor-open");
     const viewport = window.visualViewport;
+    const SETTLE_DELAY = 150;
     let fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
     let frame = 0;
+    let settleFrame = 0;
+    let settleTimer = 0;
+    let orientationTimer = 0;
+    let scrollFrame = 0;
+    let rewindTimer = 0;
     let previousKeyboardOpen = false;
     let previousHeight = 0;
-    const updateHeightNow = () => {
-      const height = viewport?.height ?? window.innerHeight;
-      const top = viewport?.offsetTop ?? 0;
+    let previousTop = -1;
+    let renderedHeight = null;
+    let committedTop = 0;
+    let pendingReveal = false;
+    const editorTextarea = () => document.querySelector("#editor");
+    const currentTop = () => Math.max(0, Math.round(viewport?.offsetTop ?? 0));
+    const canReveal = (textarea) => !!textarea && document.activeElement === textarea && textarea.selectionStart === textarea.selectionEnd;
+    const commitTop = (value) => {
+      if (value === committedTop) return;
+      committedTop = value;
+      document.documentElement.style.setProperty("--editor-viewport-top", `${value}px`);
+    };
+    // --- 指示C: ドキュメントスクロール型「逃げ」の判定 ---
+    const isDocScrolled = () => (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0) > 0;
+    const isLayoutShrunk = () => window.innerHeight < fullHeight - 100;
+    // --- 指示B: スクロール巻き戻し（compositorのパンと違いJSから戻せる） ---
+    const resetDocScroll = () => {
+      if (!isDocScrolled()) return true;
+      window.scrollTo(0, 0);
+      if (document.documentElement.scrollTop) document.documentElement.scrollTop = 0;
+      if (document.body.scrollTop) document.body.scrollTop = 0;
+      return !isDocScrolled();
+    };
+    // 巻き戻し＋誤爆コミットの後始末。指が触れている間は失敗しうるのでリトライ扱い（エラーにしない）
+    const recoverFromDocScroll = () => {
+      if (committedTop !== 0) commitTop(0);
+      if (!resetDocScroll()) return false;
+      const textarea = editorTextarea();
+      if (canReveal(textarea)) revealEditorCaret(textarea);
+      return true;
+    };
+    const settleNow = () => {
+      // 指示C: scrollY>0 の間は offsetTop をパンと解釈しない。幾何情報も根拠にしない
+      if (isDocScrolled()) {
+        pendingReveal = false;
+        recoverFromDocScroll();
+        return;
+      }
+      // 指示C補助: レイアウトビューポート縮小の痕跡が残る間はコミット禁止
+      if (isLayoutShrunk()) {
+        pendingReveal = false;
+        if (committedTop !== 0) commitTop(0);
+        return;
+      }
+      const textarea = editorTextarea();
+      const offsetTop = currentTop();
+      const wantsReveal = pendingReveal && canReveal(textarea);
+      pendingReveal = false;
+      if (offsetTop === committedTop && !wantsReveal) return;
+      if (wantsReveal || (offsetTop > 0 && canReveal(textarea))) {
+        revealEditorCaret(textarea);
+        cancelAnimationFrame(settleFrame);
+        settleFrame = requestAnimationFrame(() => {
+          commitTop(currentTop());
+        });
+        return;
+      }
+      commitTop(offsetTop);
+    };
+    const scheduleSettle = () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(settleNow, SETTLE_DELAY);
+    };
+    const updateNow = () => {
+      const height = Math.max(1, Math.round(viewport?.height ?? window.innerHeight));
+      const offsetTop = currentTop();
       const keyboardOpen = height < fullHeight - 100;
       if (!keyboardOpen && height > fullHeight - 60) fullHeight = Math.max(fullHeight, height);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
-      if (height > 0) {
-        document.documentElement.style.setProperty("--editor-viewport-height", `${Math.round(height)}px`);
-        document.documentElement.style.setProperty("--editor-viewport-top", `${Math.round(top)}px`);
+      if (height !== renderedHeight) {
+        document.documentElement.style.setProperty("--editor-viewport-height", `${height}px`);
+        renderedHeight = height;
       }
-      const textarea = document.querySelector("#editor");
-      const editorHasFocus = document.activeElement === textarea;
-      const viewportShrank = previousHeight > 0 && height < previousHeight - 24;
-      if (editorHasFocus && keyboardOpen && (!previousKeyboardOpen || viewportShrank)) {
-        requestAnimationFrame(() => requestAnimationFrame(() => revealEditorCaret(textarea)));
+      const textarea = editorTextarea();
+      const viewportChanged = previousHeight > 0 && height !== previousHeight;
+      // 指示5撤回(v3): 即時実行はせず、静定後の1回に集約する
+      if (keyboardOpen && (!previousKeyboardOpen || viewportChanged) && canReveal(textarea) && !isDocScrolled()) {
+        pendingReveal = true;
+      }
+      if (height !== previousHeight || offsetTop !== previousTop || (previousKeyboardOpen && !keyboardOpen)) {
+        scheduleSettle();
       }
       previousKeyboardOpen = keyboardOpen;
       previousHeight = height;
+      previousTop = offsetTop;
     };
-    const updateHeight = () => {
+    const update = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateHeightNow);
+      frame = requestAnimationFrame(updateNow);
     };
-    viewport?.addEventListener("resize", updateHeight);
-    viewport?.addEventListener("scroll", updateHeight);
-    window.addEventListener("resize", updateHeight);
+    const requestRecover = () => {
+      cancelAnimationFrame(scrollFrame);
+      scrollFrame = requestAnimationFrame(() => {
+        if (isDocScrolled()) recoverFromDocScroll();
+      });
+    };
+    const onDocScroll = () => { requestRecover(); };
+    // ジェスチャ終了時のリセットが本命。指が触れている間はiOSが勝つことがある
+    const onGestureEnd = () => {
+      requestRecover();
+      clearTimeout(rewindTimer);
+      rewindTimer = setTimeout(() => {
+        if (isDocScrolled()) recoverFromDocScroll();
+      }, 80);
+    };
+    const handleFocusOut = (event) => {
+      if (event.target && event.target.id === "editor") scheduleSettle();
+    };
+    const handleOrientation = () => {
+      clearTimeout(orientationTimer);
+      orientationTimer = setTimeout(() => {
+        if (document.activeElement === editorTextarea()) return;
+        fullHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, viewport?.height ?? 0);
+        previousHeight = 0;
+        updateNow();
+      }, 320);
+    };
+    viewport?.addEventListener("resize", update, { passive: true });
+    viewport?.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("orientationchange", handleOrientation, { passive: true });
+    window.addEventListener("scroll", onDocScroll, { passive: true });
+    document.addEventListener("touchend", onGestureEnd, { passive: true });
+    document.addEventListener("touchcancel", onGestureEnd, { passive: true });
+    document.addEventListener("pointerup", onGestureEnd, { passive: true });
+    document.addEventListener("focusout", handleFocusOut, true);
     stopEditorViewportSync = () => {
       cancelAnimationFrame(frame);
-      viewport?.removeEventListener("resize", updateHeight);
-      viewport?.removeEventListener("scroll", updateHeight);
-      window.removeEventListener("resize", updateHeight);
+      cancelAnimationFrame(settleFrame);
+      cancelAnimationFrame(scrollFrame);
+      clearTimeout(settleTimer);
+      clearTimeout(orientationTimer);
+      clearTimeout(rewindTimer);
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", handleOrientation);
+      window.removeEventListener("scroll", onDocScroll);
+      document.removeEventListener("touchend", onGestureEnd);
+      document.removeEventListener("touchcancel", onGestureEnd);
+      document.removeEventListener("pointerup", onGestureEnd);
+      document.removeEventListener("focusout", handleFocusOut, true);
+      committedTop = 0;
+      document.documentElement.style.setProperty("--editor-viewport-top", "0px");
     };
-    updateHeightNow();
+    updateNow();
   }
   function editorCaretMetrics(textarea, position = textarea.selectionStart) {
     if (!textarea || textarea.clientHeight <= 0) return null;
@@ -2210,10 +2347,10 @@ body.is-dragging { cursor: grabbing; }
     const paddingTop = parseFloat(style.paddingTop || "0");
     const paddingBottom = parseFloat(style.paddingBottom || "0");
     const safeTop = textarea.scrollTop + paddingTop + 12;
-    const safeBottom = textarea.scrollTop + textarea.clientHeight - paddingBottom - 22;
+    const safeBottom = textarea.scrollTop + textarea.clientHeight - paddingBottom - 48;
     let next = textarea.scrollTop;
     if (caret.top < safeTop) next = caret.top - paddingTop - 12;
-    else if (caret.top + caret.height > safeBottom) next = caret.top + caret.height - textarea.clientHeight + paddingBottom + 22;
+    else if (caret.top + caret.height > safeBottom) next = caret.top + caret.height - textarea.clientHeight + paddingBottom + 48;
     textarea.scrollTop = Math.max(0, Math.min(next, textarea.scrollHeight - textarea.clientHeight));
   }
   function scrollEditorCaretIntoView(textarea, position = textarea.selectionStart) {
